@@ -1,0 +1,6 @@
+@Watchgate.Locksight.Platform_HostAddress = http://localhost:5114
+
+GET {{Watchgate.Locksight.Platform_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
