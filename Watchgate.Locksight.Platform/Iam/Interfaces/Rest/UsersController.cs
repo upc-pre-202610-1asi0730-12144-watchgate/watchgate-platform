@@ -10,6 +10,7 @@ using Watchgate.Locksight.Platform.Iam.Interfaces.Rest.Transform;
 using Watchgate.Locksight.Platform.Resources.Errors;
 using Watchgate.Locksight.Platform.Shared.Interfaces.Rest.ProblemDetails;
 
+
 namespace Watchgate.Locksight.Platform.Iam.Interfaces.Rest;
 
 [Authorize]
