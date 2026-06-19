@@ -38,6 +38,9 @@ public class AppDbContext(DbContextOptions options) : DbContext(options)
     {
         base.OnModelCreating(builder);
         
+        // SensorIntegration Context
+        builder.ApplySensorIntegrationConfiguration();
+        
         // Publishing Context
         builder.ApplyPublishingConfiguration();
         
