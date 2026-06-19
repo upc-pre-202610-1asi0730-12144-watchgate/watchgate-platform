@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="WelcomeMessage" xml:space="preserve">
+    <value>¡Bienvenido a Watchgate Locksight!</value>
+  </data>
+  <data name="UserCreatedSuccessfully" xml:space="preserve">
+    <value>Usuario creado correctamente.</value>
+  </data>
+</root>
