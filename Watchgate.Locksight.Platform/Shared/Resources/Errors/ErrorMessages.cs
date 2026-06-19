@@ -1,6 +1,3 @@
-namespace Acme.Center.Platform.Shared.Resources.Errors;
+namespace Watchgate.Locksight.Platform.Resources.Errors;
 
-public class ErrorMessages
-{
-    
-}
+public class ErrorMessages { }

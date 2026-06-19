@@ -1,9 +1,6 @@
-namespace Acme.Center.Platform.Shared.Domain.Model;
+namespace Watchgate.Locksight.Platform.Shared.Domain.Model;
 
-
-/// <summary>
-///     Represents a domain error.
-/// </summary>
+/// <summary>Represents a domain error.</summary>
 /// <param name="Code">The unique error code.</param>
 /// <param name="Message">The error message.</param>
 public record Error(string Code, string Message)

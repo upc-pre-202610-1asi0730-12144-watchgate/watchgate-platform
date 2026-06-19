@@ -1,6 +1,3 @@
-namespace Acme.Center.Platform.Shared.Resources;
+namespace Watchgate.Locksight.Platform.Resources.Shared;
 
-public class CommonMessages
-{
-    
-}
+public class CommonMessages { }

@@ -1,18 +1,15 @@
 using Cortex.Mediator.Commands;
+using Microsoft.Extensions.Logging;
 
+namespace Watchgate.Locksight.Platform.Shared.Infrastructure.Mediator.Cortex.Configuration;
 
-namespace Acme.Center.Platform.Shared.Infrastructure.Mediator.Cortex.Configuration;
-
-
-public class LoggingCommandBehavior<TCommand>
+public class LoggingCommandBehavior<TCommand>(ILogger<LoggingCommandBehavior<TCommand>> logger)
     : ICommandPipelineBehavior<TCommand> where TCommand : ICommand
 {
-    public async Task Handle(
-        TCommand command,
-        CommandHandlerDelegate next,
-        CancellationToken ct)
+    public async Task Handle(TCommand command, CommandHandlerDelegate next, CancellationToken ct)
     {
-        // Log before/after
+        logger.LogInformation("Handling command {CommandName}", typeof(TCommand).Name);
         await next();
+        logger.LogInformation("Handled command {CommandName}", typeof(TCommand).Name);
     }
 }

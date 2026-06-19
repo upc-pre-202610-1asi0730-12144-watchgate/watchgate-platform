@@ -1,53 +1,22 @@
-using Acme.Center.Platform.Profiles.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
-using Acme.Center.Platform.Publishing.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
-using Acme.Center.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
-using Acme.Center.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Interceptors;
 using Microsoft.EntityFrameworkCore;
+using Watchgate.Locksight.Platform.Iam.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
+using Watchgate.Locksight.Platform.SecurityAlerts.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
+using Watchgate.Locksight.Platform.SensorIntegration.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
+using Watchgate.Locksight.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
+using Watchgate.Locksight.Platform.WarehouseManagement.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 
+namespace Watchgate.Locksight.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 
-namespace Acme.Center.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
-
-
-/// <summary>
-///     Application database context for the Learning Center Platform
-/// </summary>
-/// <param name="options">
-///     The options for the database context
-/// </param>
+/// <summary>Application database context for the Watchgate Locksight Platform.</summary>
 public class AppDbContext(DbContextOptions options) : DbContext(options)
 {
-    /// <inheritdoc />
-    protected override void OnConfiguring(DbContextOptionsBuilder builder)
-    {
-        // Apply audit timestamp interceptor for all IAuditableEntity implementations
-        builder.AddInterceptors(new AuditableEntityInterceptor());
-        base.OnConfiguring(builder);
-    }
-
-
-    /// <summary>
-    ///     On creating the database model
-    /// </summary>
-    /// <remarks>
-    ///     This method is used to create the database model for the application.
-    /// </remarks>
-    /// <param name="builder">
-    ///     The model builder for the database context
-    /// </param>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-        
-        // SensorIntegration Context
+        builder.ApplyIamConfiguration();
+        builder.ApplyWarehouseManagementConfiguration();
         builder.ApplySensorIntegrationConfiguration();
-        
-        // Publishing Context
-        builder.ApplyPublishingConfiguration();
-        
-        // Profiles Context
-        builder.ApplyProfilesConfiguration();
-        
-        // General Naming Convention for the database objects
+        builder.ApplySecurityAlertsConfiguration();
         builder.UseSnakeCaseNamingConvention();
     }
 }

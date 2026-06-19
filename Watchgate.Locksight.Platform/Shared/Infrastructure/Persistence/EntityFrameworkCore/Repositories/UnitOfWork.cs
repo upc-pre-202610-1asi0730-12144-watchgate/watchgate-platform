@@ -1,25 +1,11 @@
-using Acme.Center.Platform.Shared.Domain.Repositories;
-using Acme.Center.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
+using Watchgate.Locksight.Platform.Shared.Domain.Repositories;
+using Watchgate.Locksight.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 
+namespace Watchgate.Locksight.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 
-namespace Acme.Center.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
-
-
-/// <summary>
-///     Unit of work for the application.
-/// </summary>
-/// <remarks>
-///     This class is used to save changes to the database context.
-///     It implements the IUnitOfWork interface.
-/// </remarks>
-/// <param name="context">
-///     The database context for the application
-/// </param>
+/// <summary>Unit of work for the application.</summary>
 public class UnitOfWork(AppDbContext context) : IUnitOfWork
 {
-    // inheritedDoc
-    public async Task CompleteAsync(CancellationToken cancellationToken = default)
-    {
+    public async Task CompleteAsync(CancellationToken cancellationToken = default) =>
         await context.SaveChangesAsync(cancellationToken);
-    }
 }
