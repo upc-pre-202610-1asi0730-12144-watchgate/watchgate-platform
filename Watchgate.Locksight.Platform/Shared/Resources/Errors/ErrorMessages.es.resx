@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="GenericError" xml:space="preserve">
+    <value>Ocurrió un error.</value>
+  </data>
+  <data name="OperationCancelled" xml:space="preserve">
+    <value>La operación fue cancelada.</value>
+  </data>
+
+  <!-- IAM Errors -->
+  <data name="IamError.UserNotFound" xml:space="preserve">
+    <value>Usuario no encontrado.</value>
+  </data>
+  <data name="IamError.EmailAlreadyRegistered" xml:space="preserve">
+    <value>El correo electrónico {0} ya está registrado.</value>
+  </data>
+  <data name="IamError.InvalidCredentials" xml:space="preserve">
+    <value>Correo electrónico o contraseña inválidos.</value>
+  </data>
+  <data name="IamError.OperationCancelled" xml:space="preserve">
+    <value>La operación IAM fue cancelada.</value>
+  </data>
+  <data name="IamError.DatabaseError" xml:space="preserve">
+    <value>Ocurrió un error de base de datos en la operación IAM.</value>
+  </data>
+  <data name="IamError.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno inesperado en IAM.</value>
+  </data>
+
+  <!-- Warehouse Management Errors -->
+  <data name="WarehouseManagementError.WarehouseNotFound" xml:space="preserve">
+    <value>Almacén no encontrado.</value>
+  </data>
+  <data name="WarehouseManagementError.ZoneNotFound" xml:space="preserve">
+    <value>Zona de almacén no encontrada.</value>
+  </data>
+  <data name="WarehouseManagementError.CompanyNotFound" xml:space="preserve">
+    <value>Empresa no encontrada.</value>
+  </data>
+  <data name="WarehouseManagementError.OperationCancelled" xml:space="preserve">
+    <value>La operación de almacén fue cancelada.</value>
+  </data>
+  <data name="WarehouseManagementError.DatabaseError" xml:space="preserve">
+    <value>Ocurrió un error de base de datos en la operación de almacén.</value>
+  </data>
+  <data name="WarehouseManagementError.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno inesperado en Gestión de Almacenes.</value>
+  </data>
+
+  <!-- Sensor Integration Errors -->
+  <data name="SensorIntegrationError.SensorNotFound" xml:space="preserve">
+    <value>Sensor no encontrado.</value>
+  </data>
+  <data name="SensorIntegrationError.SensorAlreadyLinked" xml:space="preserve">
+    <value>El sensor con número de serie {0} ya está vinculado.</value>
+  </data>
+  <data name="SensorIntegrationError.OperationCancelled" xml:space="preserve">
+    <value>La operación del sensor fue cancelada.</value>
+  </data>
+  <data name="SensorIntegrationError.DatabaseError" xml:space="preserve">
+    <value>Ocurrió un error de base de datos en la operación del sensor.</value>
+  </data>
+  <data name="SensorIntegrationError.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno inesperado en Integración de Sensores.</value>
+  </data>
+
+  <!-- Security Alerts Errors -->
+  <data name="SecurityAlertsError.AlertNotFound" xml:space="preserve">
+    <value>Alerta de seguridad no encontrada.</value>
+  </data>
+  <data name="SecurityAlertsError.IncidentNotFound" xml:space="preserve">
+    <value>Incidente de alerta no encontrado.</value>
+  </data>
+  <data name="SecurityAlertsError.OperationCancelled" xml:space="preserve">
+    <value>La operación de alerta de seguridad fue cancelada.</value>
+  </data>
+  <data name="SecurityAlertsError.DatabaseError" xml:space="preserve">
+    <value>Ocurrió un error de base de datos en la operación de alertas de seguridad.</value>
+  </data>
+  <data name="SecurityAlertsError.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno inesperado en Alertas de Seguridad.</value>
+  </data>
+</root>
