@@ -44,6 +44,7 @@ using Watchgate.Locksight.Platform.WarehouseManagement.Application.QueryServices
 using Watchgate.Locksight.Platform.WarehouseManagement.Domain.Repositories;
 using Watchgate.Locksight.Platform.WarehouseManagement.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 using Watchgate.Locksight.Platform.WarehouseManagement.Resources;
+using Watchgate.Locksight.Platform.Iam.Infrastructure.Pipeline.Middleware.Attributes;
 using ProblemDetailsFactory = Watchgate.Locksight.Platform.Shared.Interfaces.Rest.ProblemDetails.ProblemDetailsFactory;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -165,7 +166,8 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+    app.MapGet("/", () => Results.Redirect("/swagger"))
+        .WithMetadata(new AllowAnonymousAttribute());}
 
 app.UseCors("AllowAllPolicy");
 app.UseRequestAuthorization();

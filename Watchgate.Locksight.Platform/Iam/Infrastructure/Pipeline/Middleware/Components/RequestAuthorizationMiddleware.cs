@@ -14,6 +14,15 @@ public class RequestAuthorizationMiddleware(RequestDelegate next)
         //,CancellationToken cancellationToken
         )
     {
+        
+        // Permitir acceso libre a Swagger sin pasar por autenticación
+        if (context.Request.Path.StartsWithSegments("/swagger"))
+        {
+            await next(context);
+            return;
+        }
+
+
         var endpoint = context.Request.HttpContext.GetEndpoint();
         if (endpoint == null)
         {
@@ -31,8 +40,8 @@ public class RequestAuthorizationMiddleware(RequestDelegate next)
         }
 
         var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-        if (token == null) throw new Exception("Null or invalid token");
-
+        if (token == null) throw new Exception($"Null or invalid token. Path: {context.Request.Path}");
+        
         var userId = await tokenService.ValidateToken(token);
         if (userId == null) throw new Exception("Invalid token");
 
