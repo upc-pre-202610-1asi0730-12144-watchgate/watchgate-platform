@@ -151,6 +151,13 @@ var app = builder.Build();
 //     context.Database.EnsureCreated();
 // }
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<AppDbContext>();
+    context.Database.Migrate();
+}
+
 app.UseGlobalExceptionHandler();
 
 var supportedCultures = new[] { "en", "es" };
