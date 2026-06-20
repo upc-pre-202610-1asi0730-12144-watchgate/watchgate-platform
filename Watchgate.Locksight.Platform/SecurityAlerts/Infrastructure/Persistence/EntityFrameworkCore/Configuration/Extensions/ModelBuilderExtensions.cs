@@ -28,7 +28,17 @@ public static class ModelBuilderExtensions
             entity.Property(i => i.CreatedAt).IsRequired();
             entity.Property(i => i.ClosedAt);
             entity.HasMany(i => i.RelatedAlerts).WithMany()
-                .UsingEntity("alert_incident_security_alerts");
+                .UsingEntity(
+                    "alert_incident_security_alerts",
+                    l => l.HasOne(typeof(SecurityAlert))
+                        .WithMany()
+                        .HasForeignKey("related_alerts_id")
+                        .HasConstraintName("fk_aisa_security_alert"),
+                    r => r.HasOne(typeof(AlertIncident))
+                        .WithMany()
+                        .HasForeignKey("alert_incident_id")
+                        .HasConstraintName("fk_aisa_alert_incident")
+                );
         });
     }
 }
