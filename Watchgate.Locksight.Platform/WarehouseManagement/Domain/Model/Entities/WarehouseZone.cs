@@ -1,3 +1,5 @@
+using Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.ValueObjects;
+
 namespace Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.Entities;
 
 public class WarehouseZone
@@ -6,11 +8,11 @@ public class WarehouseZone
     public string Name { get; private set; } = string.Empty;
     public double Area { get; private set; }
     public string RiskLevel { get; private set; } = "LOW";
-    public int WarehouseId { get; private set; }
+    public WarehouseId WarehouseId { get; private set; }
 
     protected WarehouseZone() { }
 
-    public WarehouseZone(string name, double area, int warehouseId, string riskLevel = "LOW")
+    public WarehouseZone(string name, double area, WarehouseId warehouseId, string riskLevel = "LOW")
     {
         Name = name;
         Area = area;

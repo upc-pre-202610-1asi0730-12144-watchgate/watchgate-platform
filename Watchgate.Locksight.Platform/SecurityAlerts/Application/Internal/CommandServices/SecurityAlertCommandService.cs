@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Watchgate.Locksight.Platform.Shared.Application.Model;
+using Watchgate.Locksight.Platform.Shared.Domain.Model.Events;
 using Watchgate.Locksight.Platform.Shared.Domain.Repositories;
 using Watchgate.Locksight.Platform.SecurityAlerts.Application.CommandServices;
 using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model;
 using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model.Aggregates;
 using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model.Commands;
+using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model.Events;
 using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Repositories;
 
 namespace Watchgate.Locksight.Platform.SecurityAlerts.Application.Internal.CommandServices;
@@ -12,7 +14,8 @@ namespace Watchgate.Locksight.Platform.SecurityAlerts.Application.Internal.Comma
 public class SecurityAlertCommandService(
     ISecurityAlertRepository alertRepository,
     IAlertIncidentRepository incidentRepository,
-    IUnitOfWork unitOfWork) : ISecurityAlertCommandService
+    IUnitOfWork unitOfWork,
+    IEventDispatcher eventDispatcher) : ISecurityAlertCommandService
 {
     public async Task<Result<SecurityAlert>> Handle(CreateSecurityAlertCommand command, CancellationToken cancellationToken = default)
     {
@@ -21,6 +24,11 @@ public class SecurityAlertCommandService(
             var alert = new SecurityAlert(command.Type, command.Severity, command.Description, command.SensorId, command.CompanyId);
             await alertRepository.AddAsync(alert, cancellationToken);
             await unitOfWork.CompleteAsync(cancellationToken);
+
+            await eventDispatcher.DispatchAsync(
+                new SecurityAlertTriggeredEvent(alert.Id, alert.Type, alert.Severity, alert.SensorId, alert.CompanyId),
+                cancellationToken);
+
             return Result<SecurityAlert>.Success(alert);
         }
         catch (OperationCanceledException)

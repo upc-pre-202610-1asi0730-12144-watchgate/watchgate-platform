@@ -14,11 +14,9 @@ public static class ModelBuilderExtensions
             foreach (var property in entity.GetProperties())
                 property.SetColumnName(property.GetColumnName().ToSnakeCase());
 
-            foreach (var key in entity.GetKeys())
-            {
-                var keyName = key.GetName();
-                if (!string.IsNullOrEmpty(keyName)) key.SetName(keyName.ToSnakeCase());
-            }
+            // Primary key constraint names are intentionally left to EF Core's own conventions:
+            // explicitly renaming them breaks the implicit PK sharing between owner and owned
+            // (table-splitting) entity types introduced by OwnsOne value objects.
 
             foreach (var foreignKey in entity.GetForeignKeys())
             {

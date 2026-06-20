@@ -26,6 +26,10 @@ namespace Watchgate.Locksight.Platform.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
                     b.Property<string>("TaxId")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -38,8 +42,11 @@ namespace Watchgate.Locksight.Platform.Migrations
                         .HasColumnType("varchar(200)")
                         .HasColumnName("trade_name");
 
-                    b.HasKey("Id")
-                        .HasName("p_k_companies");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
 
                     b.ToTable("companies");
                 });
@@ -54,6 +61,10 @@ namespace Watchgate.Locksight.Platform.Migrations
                     b.Property<int>("CompanyId")
                         .HasColumnType("int")
                         .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -80,8 +91,11 @@ namespace Watchgate.Locksight.Platform.Migrations
                         .HasDefaultValue("Visitor")
                         .HasColumnName("role");
 
-                    b.HasKey("Id")
-                        .HasName("p_k_users");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("CompanyId")
                         .HasDatabaseName("i_x_users_company_id");
@@ -140,8 +154,11 @@ namespace Watchgate.Locksight.Platform.Migrations
                         .HasColumnType("varchar(200)")
                         .HasColumnName("title");
 
-                    b.HasKey("Id")
-                        .HasName("p_k_alert_incidents");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
 
                     b.ToTable("alert_incidents");
                 });
@@ -156,6 +173,10 @@ namespace Watchgate.Locksight.Platform.Migrations
                     b.Property<int>("CompanyId")
                         .HasColumnType("int")
                         .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -197,8 +218,11 @@ namespace Watchgate.Locksight.Platform.Migrations
                         .HasColumnType("varchar(50)")
                         .HasColumnName("type");
 
-                    b.HasKey("Id")
-                        .HasName("p_k_security_alerts");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
 
                     b.ToTable("security_alerts");
                 });
@@ -213,6 +237,10 @@ namespace Watchgate.Locksight.Platform.Migrations
                     b.Property<int>("CompanyId")
                         .HasColumnType("int")
                         .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
 
                     b.Property<double?>("LastReading")
                         .HasColumnType("double")
@@ -247,12 +275,15 @@ namespace Watchgate.Locksight.Platform.Migrations
                         .HasColumnType("varchar(20)")
                         .HasColumnName("unit");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
                     b.Property<int>("ZoneId")
                         .HasColumnType("int")
                         .HasColumnName("zone_id");
 
-                    b.HasKey("Id")
-                        .HasName("p_k_sensors");
+                    b.HasKey("Id");
 
                     b.ToTable("sensors");
                 });
@@ -271,6 +302,10 @@ namespace Watchgate.Locksight.Platform.Migrations
                     b.Property<int>("CompanyId")
                         .HasColumnType("int")
                         .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Location")
                         .IsRequired()
@@ -300,8 +335,11 @@ namespace Watchgate.Locksight.Platform.Migrations
                         .HasDefaultValue("ACTIVE")
                         .HasColumnName("status");
 
-                    b.HasKey("Id")
-                        .HasName("p_k_warehouses");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
 
                     b.ToTable("warehouses");
                 });
@@ -335,8 +373,7 @@ namespace Watchgate.Locksight.Platform.Migrations
                         .HasColumnType("int")
                         .HasColumnName("warehouse_id");
 
-                    b.HasKey("Id")
-                        .HasName("p_k_warehouse_zones");
+                    b.HasKey("Id");
 
                     b.HasIndex("WarehouseId")
                         .HasDatabaseName("i_x_warehouse_zones_warehouse_id");
@@ -354,8 +391,7 @@ namespace Watchgate.Locksight.Platform.Migrations
                         .HasColumnType("int")
                         .HasColumnName("related_alerts_id");
 
-                    b.HasKey("alert_incident_id", "related_alerts_id")
-                        .HasName("p_k_alert_incident_security_alerts");
+                    b.HasKey("alert_incident_id", "related_alerts_id");
 
                     b.HasIndex("related_alerts_id")
                         .HasDatabaseName("i_x_alert_incident_security_alerts_related_alerts_id");

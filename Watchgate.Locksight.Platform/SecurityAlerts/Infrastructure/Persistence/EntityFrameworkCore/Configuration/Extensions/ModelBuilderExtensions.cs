@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model.Aggregates;
+using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model.ValueObjects;
 
 namespace Watchgate.Locksight.Platform.SecurityAlerts.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 
@@ -10,6 +11,9 @@ public static class ModelBuilderExtensions
         builder.Entity<SecurityAlert>(entity =>
         {
             entity.HasKey(a => a.Id);
+            entity.Property(a => a.Id)
+                .HasConversion(id => id.Value, value => new SecurityAlertId(value))
+                .IsRequired().ValueGeneratedOnAdd();
             entity.Property(a => a.Type).IsRequired().HasMaxLength(50);
             entity.Property(a => a.Severity).IsRequired().HasMaxLength(20).HasDefaultValue("LOW");
             entity.Property(a => a.Status).IsRequired().HasMaxLength(20).HasDefaultValue("OPEN");
@@ -21,6 +25,9 @@ public static class ModelBuilderExtensions
         builder.Entity<AlertIncident>(entity =>
         {
             entity.HasKey(i => i.Id);
+            entity.Property(i => i.Id)
+                .HasConversion(id => id.Value, value => new AlertIncidentId(value))
+                .IsRequired().ValueGeneratedOnAdd();
             entity.Property(i => i.Title).IsRequired().HasMaxLength(200);
             entity.Property(i => i.Description).IsRequired().HasMaxLength(1000);
             entity.Property(i => i.Status).IsRequired().HasMaxLength(20).HasDefaultValue("OPEN");

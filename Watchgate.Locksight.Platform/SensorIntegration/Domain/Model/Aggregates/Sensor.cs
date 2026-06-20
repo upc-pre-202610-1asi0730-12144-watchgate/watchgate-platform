@@ -1,8 +1,11 @@
+using Watchgate.Locksight.Platform.SensorIntegration.Domain.Model.ValueObjects;
+using Watchgate.Locksight.Platform.Shared.Domain.Model;
+
 namespace Watchgate.Locksight.Platform.SensorIntegration.Domain.Model.Aggregates;
 
-public class Sensor
+public partial class Sensor : IAuditableEntity
 {
-    public int Id { get; private set; }
+    public SensorId Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string Type { get; private set; } = string.Empty;
     public string Status { get; private set; } = "ACTIVE";

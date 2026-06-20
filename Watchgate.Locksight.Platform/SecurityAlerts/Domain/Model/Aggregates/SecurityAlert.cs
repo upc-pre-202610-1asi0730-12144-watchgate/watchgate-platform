@@ -1,8 +1,11 @@
+using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model.ValueObjects;
+using Watchgate.Locksight.Platform.Shared.Domain.Model;
+
 namespace Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model.Aggregates;
 
-public class SecurityAlert
+public partial class SecurityAlert : IAuditableEntity
 {
-    public int Id { get; private set; }
+    public SecurityAlertId Id { get; private set; }
     public string Type { get; private set; } = string.Empty;
     public string Severity { get; private set; } = "LOW";
     public string Status { get; private set; } = "OPEN";

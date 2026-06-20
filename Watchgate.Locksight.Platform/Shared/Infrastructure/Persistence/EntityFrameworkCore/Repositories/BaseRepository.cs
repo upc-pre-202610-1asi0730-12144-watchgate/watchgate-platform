@@ -5,7 +5,7 @@ using Watchgate.Locksight.Platform.Shared.Infrastructure.Persistence.EntityFrame
 namespace Watchgate.Locksight.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 
 /// <summary>Base repository for all repositories.</summary>
-public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : class
+public class BaseRepository<TEntity, TId> : IBaseRepository<TEntity, TId> where TEntity : class
 {
     protected readonly AppDbContext Context;
 
@@ -14,8 +14,8 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
     public async Task AddAsync(TEntity entity, CancellationToken cancellationToken = default) =>
         await Context.Set<TEntity>().AddAsync(entity, cancellationToken);
 
-    public async Task<TEntity?> FindByIdAsync(int id, CancellationToken cancellationToken = default) =>
-        await Context.Set<TEntity>().FindAsync(new object[] { id }, cancellationToken);
+    public async Task<TEntity?> FindByIdAsync(TId id, CancellationToken cancellationToken = default) =>
+        await Context.Set<TEntity>().FindAsync(new object?[] { id }, cancellationToken);
 
     public void Update(TEntity entity) => Context.Set<TEntity>().Update(entity);
 

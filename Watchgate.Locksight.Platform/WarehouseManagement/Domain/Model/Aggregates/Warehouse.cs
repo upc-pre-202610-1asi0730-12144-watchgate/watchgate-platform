@@ -1,12 +1,14 @@
+using Watchgate.Locksight.Platform.Shared.Domain.Model;
 using Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.Entities;
+using Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.ValueObjects;
 
 namespace Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.Aggregates;
 
-public class Warehouse
+public partial class Warehouse : IAuditableEntity
 {
-    public int Id { get; private set; }
+    public WarehouseId Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
-    public string Location { get; private set; } = string.Empty;
+    public StreetAddress Location { get; private set; } = null!;
     public int Capacity { get; private set; }
     public string Status { get; private set; } = "ACTIVE";
     public TimeSpan? OperationStart { get; private set; }
@@ -17,7 +19,7 @@ public class Warehouse
 
     protected Warehouse() { }
 
-    public Warehouse(string name, string location, int capacity, int companyId,
+    public Warehouse(string name, StreetAddress location, int capacity, int companyId,
         TimeSpan? operationStart = null, TimeSpan? operationEnd = null)
     {
         Name = name;
@@ -29,7 +31,7 @@ public class Warehouse
         Status = "ACTIVE";
     }
 
-    public void Update(string name, string location, int capacity,
+    public void Update(string name, StreetAddress location, int capacity,
         TimeSpan? operationStart, TimeSpan? operationEnd)
     {
         Name = name;
