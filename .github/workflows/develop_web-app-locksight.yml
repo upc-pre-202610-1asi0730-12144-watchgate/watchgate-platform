@@ -39,7 +39,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
 
     steps:
@@ -47,13 +46,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-      
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_15479CBD751E4B7FAAD08B161280F2D4 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_FB8CA01A17FB42BB995F7014CF9F4131 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_46A7D105DFC44660A7D52C47A990B653 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -61,5 +53,5 @@ jobs:
         with:
           app-name: 'web-app-locksight'
           slot-name: 'Production'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
-          
