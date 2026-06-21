@@ -184,12 +184,9 @@ var localizationOptions = new RequestLocalizationOptions()
 app.UseRequestLocalization(localizationOptions);
 app.UseHttpsRedirection();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-    app.MapGet("/", () => Results.Redirect("/swagger"))
-        .WithMetadata(new AllowAnonymousAttribute());}
+app.UseSwagger();
+app.UseSwaggerUI();
+app.MapGet("/", () => Results.Redirect("/swagger")).WithMetadata(new AllowAnonymousAttribute());
 
 app.UseCors("AllowAllPolicy");
 app.UseRequestAuthorization();
