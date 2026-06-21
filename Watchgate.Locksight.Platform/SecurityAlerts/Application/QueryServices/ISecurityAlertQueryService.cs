@@ -8,6 +8,8 @@ public interface ISecurityAlertQueryService
 {
     Task<Result<SecurityAlert>> Handle(GetAlertByIdQuery query, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<SecurityAlert>>> Handle(GetAlertsByCompanyIdQuery query, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<SecurityAlert>>> Handle(GetAlertsByWarehouseIdQuery query, CancellationToken cancellationToken = default);
     Task<Result<AlertIncident>> Handle(GetIncidentByIdQuery query, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<AlertIncident>>> Handle(GetIncidentsByCompanyIdQuery query, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<AlertIncident>>> Handle(GetIncidentsByWarehouseIdQuery query, CancellationToken cancellationToken = default);
 }

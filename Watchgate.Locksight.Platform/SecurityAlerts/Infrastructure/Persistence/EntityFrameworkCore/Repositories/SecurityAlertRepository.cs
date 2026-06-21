@@ -11,4 +11,7 @@ public class SecurityAlertRepository(AppDbContext context) : BaseRepository<Secu
 {
     public async Task<IEnumerable<SecurityAlert>> FindByCompanyIdAsync(int companyId, CancellationToken cancellationToken = default) =>
         await Context.Set<SecurityAlert>().Where(a => a.CompanyId == companyId).ToListAsync(cancellationToken);
+
+    public async Task<IEnumerable<SecurityAlert>> FindBySensorIdsAsync(IEnumerable<int> sensorIds, CancellationToken cancellationToken = default) =>
+        await Context.Set<SecurityAlert>().Where(a => sensorIds.Contains(a.SensorId)).ToListAsync(cancellationToken);
 }

@@ -12,6 +12,9 @@ public class SensorRepository(AppDbContext context) : BaseRepository<Sensor, Sen
     public async Task<IEnumerable<Sensor>> FindByZoneIdAsync(int zoneId, CancellationToken cancellationToken = default) =>
         await Context.Set<Sensor>().Where(s => s.ZoneId == zoneId).ToListAsync(cancellationToken);
 
+    public async Task<IEnumerable<Sensor>> FindByZoneIdsAsync(IEnumerable<int> zoneIds, CancellationToken cancellationToken = default) =>
+        await Context.Set<Sensor>().Where(s => zoneIds.Contains(s.ZoneId)).ToListAsync(cancellationToken);
+
     public async Task<IEnumerable<Sensor>> FindByCompanyIdAsync(int companyId, CancellationToken cancellationToken = default) =>
         await Context.Set<Sensor>().Where(s => s.CompanyId == companyId).ToListAsync(cancellationToken);
 }

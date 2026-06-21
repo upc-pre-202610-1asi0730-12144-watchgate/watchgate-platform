@@ -28,12 +28,14 @@ using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model.Events;
 using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Repositories;
 using Watchgate.Locksight.Platform.SecurityAlerts.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 using Watchgate.Locksight.Platform.SecurityAlerts.Resources;
+using Watchgate.Locksight.Platform.SensorIntegration.Application.Acl;
 using Watchgate.Locksight.Platform.SensorIntegration.Application.CommandServices;
 using Watchgate.Locksight.Platform.SensorIntegration.Application.Internal.CommandServices;
 using Watchgate.Locksight.Platform.SensorIntegration.Application.Internal.QueryServices;
 using Watchgate.Locksight.Platform.SensorIntegration.Application.QueryServices;
 using Watchgate.Locksight.Platform.SensorIntegration.Domain.Repositories;
 using Watchgate.Locksight.Platform.SensorIntegration.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
+using Watchgate.Locksight.Platform.SensorIntegration.Interfaces.Acl;
 using Watchgate.Locksight.Platform.SensorIntegration.Resources;
 using Watchgate.Locksight.Platform.Shared.Domain.Model.Events;
 using Watchgate.Locksight.Platform.Shared.Domain.Repositories;
@@ -43,12 +45,14 @@ using Watchgate.Locksight.Platform.Shared.Infrastructure.Mediator.Cortex.Configu
 using Watchgate.Locksight.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 using Watchgate.Locksight.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 using Watchgate.Locksight.Platform.Shared.Infrastructure.Pipeline.Middleware.Extensions;
+using Watchgate.Locksight.Platform.WarehouseManagement.Application.Acl;
 using Watchgate.Locksight.Platform.WarehouseManagement.Application.CommandServices;
 using Watchgate.Locksight.Platform.WarehouseManagement.Application.Internal.CommandServices;
 using Watchgate.Locksight.Platform.WarehouseManagement.Application.Internal.QueryServices;
 using Watchgate.Locksight.Platform.WarehouseManagement.Application.QueryServices;
 using Watchgate.Locksight.Platform.WarehouseManagement.Domain.Repositories;
 using Watchgate.Locksight.Platform.WarehouseManagement.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
+using Watchgate.Locksight.Platform.WarehouseManagement.Interfaces.Acl;
 using Watchgate.Locksight.Platform.WarehouseManagement.Resources;
 using Watchgate.Locksight.Platform.Iam.Infrastructure.Pipeline.Middleware.Attributes;
 using ProblemDetailsFactory = Watchgate.Locksight.Platform.Shared.Interfaces.Rest.ProblemDetails.ProblemDetailsFactory;
@@ -135,11 +139,13 @@ builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
 builder.Services.AddScoped<IWarehouseZoneRepository, WarehouseZoneRepository>();
 builder.Services.AddScoped<IWarehouseCommandService, WarehouseCommandService>();
 builder.Services.AddScoped<IWarehouseQueryService, WarehouseQueryService>();
+builder.Services.AddScoped<IWarehouseContextFacade, WarehouseContextFacade>();
 
 // Sensor Integration Bounded Context
 builder.Services.AddScoped<ISensorRepository, SensorRepository>();
 builder.Services.AddScoped<ISensorCommandService, SensorCommandService>();
 builder.Services.AddScoped<ISensorQueryService, SensorQueryService>();
+builder.Services.AddScoped<ISensorContextFacade, SensorContextFacade>();
 
 // Security Alerts Bounded Context
 builder.Services.AddScoped<ISecurityAlertRepository, SecurityAlertRepository>();

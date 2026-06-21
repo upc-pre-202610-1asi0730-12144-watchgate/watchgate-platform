@@ -51,6 +51,15 @@ public class SecurityAlertsController(
             alerts => Ok(alerts.Select(SecurityAlertResourceFromEntityAssembler.ToResourceFromEntity)));
     }
 
+    [HttpGet("warehouse/{warehouseId:int}")]
+    public async Task<IActionResult> GetAlertsByWarehouseId(int warehouseId, CancellationToken cancellationToken)
+    {
+        var query = new GetAlertsByWarehouseIdQuery(warehouseId);
+        var result = await alertQueryService.Handle(query, cancellationToken);
+        return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
+            alerts => Ok(alerts.Select(SecurityAlertResourceFromEntityAssembler.ToResourceFromEntity)));
+    }
+
     [HttpPatch("{alertId:int}/resolve")]
     public async Task<IActionResult> ResolveAlert(int alertId, CancellationToken cancellationToken)
     {
@@ -86,6 +95,15 @@ public class SecurityAlertsController(
     public async Task<IActionResult> GetIncidentsByCompanyId(int companyId, CancellationToken cancellationToken)
     {
         var query = new GetIncidentsByCompanyIdQuery(companyId);
+        var result = await alertQueryService.Handle(query, cancellationToken);
+        return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
+            incidents => Ok(incidents.Select(SecurityAlertResourceFromEntityAssembler.ToIncidentResourceFromEntity)));
+    }
+
+    [HttpGet("incidents/warehouse/{warehouseId:int}")]
+    public async Task<IActionResult> GetIncidentsByWarehouseId(int warehouseId, CancellationToken cancellationToken)
+    {
+        var query = new GetIncidentsByWarehouseIdQuery(warehouseId);
         var result = await alertQueryService.Handle(query, cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             incidents => Ok(incidents.Select(SecurityAlertResourceFromEntityAssembler.ToIncidentResourceFromEntity)));

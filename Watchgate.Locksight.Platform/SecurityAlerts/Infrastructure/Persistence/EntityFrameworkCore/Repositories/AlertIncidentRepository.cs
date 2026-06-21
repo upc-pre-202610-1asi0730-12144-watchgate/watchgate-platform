@@ -11,4 +11,10 @@ public class AlertIncidentRepository(AppDbContext context) : BaseRepository<Aler
 {
     public async Task<IEnumerable<AlertIncident>> FindByCompanyIdAsync(int companyId, CancellationToken cancellationToken = default) =>
         await Context.Set<AlertIncident>().Where(i => i.CompanyId == companyId).ToListAsync(cancellationToken);
+
+    public async Task<IEnumerable<AlertIncident>> FindByRelatedAlertSensorIdsAsync(IEnumerable<int> sensorIds, CancellationToken cancellationToken = default) =>
+        await Context.Set<AlertIncident>()
+            .Include(i => i.RelatedAlerts)
+            .Where(i => i.RelatedAlerts.Any(alert => sensorIds.Contains(alert.SensorId)))
+            .ToListAsync(cancellationToken);
 }

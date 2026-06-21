@@ -4,12 +4,14 @@ using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model;
 using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model.Aggregates;
 using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model.Queries;
 using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Repositories;
+using Watchgate.Locksight.Platform.SensorIntegration.Interfaces.Acl;
 
 namespace Watchgate.Locksight.Platform.SecurityAlerts.Application.Internal.QueryServices;
 
 public class SecurityAlertQueryService(
     ISecurityAlertRepository alertRepository,
-    IAlertIncidentRepository incidentRepository) : ISecurityAlertQueryService
+    IAlertIncidentRepository incidentRepository,
+    ISensorContextFacade sensorContextFacade) : ISecurityAlertQueryService
 {
     public async Task<Result<SecurityAlert>> Handle(GetAlertByIdQuery query, CancellationToken cancellationToken = default)
     {
@@ -25,6 +27,15 @@ public class SecurityAlertQueryService(
         return Result<IEnumerable<SecurityAlert>>.Success(alerts);
     }
 
+    public async Task<Result<IEnumerable<SecurityAlert>>> Handle(GetAlertsByWarehouseIdQuery query, CancellationToken cancellationToken = default)
+    {
+        var sensorIds = (await sensorContextFacade.FetchSensorIdsByWarehouseIdAsync(query.WarehouseId, cancellationToken)).ToList();
+        if (sensorIds.Count == 0) return Result<IEnumerable<SecurityAlert>>.Success([]);
+
+        var alerts = await alertRepository.FindBySensorIdsAsync(sensorIds, cancellationToken);
+        return Result<IEnumerable<SecurityAlert>>.Success(alerts);
+    }
+
     public async Task<Result<AlertIncident>> Handle(GetIncidentByIdQuery query, CancellationToken cancellationToken = default)
     {
         var incident = await incidentRepository.FindByIdAsync(query.IncidentId, cancellationToken);
@@ -36,6 +47,15 @@ public class SecurityAlertQueryService(
     public async Task<Result<IEnumerable<AlertIncident>>> Handle(GetIncidentsByCompanyIdQuery query, CancellationToken cancellationToken = default)
     {
         var incidents = await incidentRepository.FindByCompanyIdAsync(query.CompanyId, cancellationToken);
+        return Result<IEnumerable<AlertIncident>>.Success(incidents);
+    }
+
+    public async Task<Result<IEnumerable<AlertIncident>>> Handle(GetIncidentsByWarehouseIdQuery query, CancellationToken cancellationToken = default)
+    {
+        var sensorIds = (await sensorContextFacade.FetchSensorIdsByWarehouseIdAsync(query.WarehouseId, cancellationToken)).ToList();
+        if (sensorIds.Count == 0) return Result<IEnumerable<AlertIncident>>.Success([]);
+
+        var incidents = await incidentRepository.FindByRelatedAlertSensorIdsAsync(sensorIds, cancellationToken);
         return Result<IEnumerable<AlertIncident>>.Success(incidents);
     }
 }

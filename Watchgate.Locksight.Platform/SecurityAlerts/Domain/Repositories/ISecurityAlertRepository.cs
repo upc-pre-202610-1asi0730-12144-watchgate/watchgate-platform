@@ -7,4 +7,5 @@ namespace Watchgate.Locksight.Platform.SecurityAlerts.Domain.Repositories;
 public interface ISecurityAlertRepository : IBaseRepository<SecurityAlert, SecurityAlertId>
 {
     Task<IEnumerable<SecurityAlert>> FindByCompanyIdAsync(int companyId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<SecurityAlert>> FindBySensorIdsAsync(IEnumerable<int> sensorIds, CancellationToken cancellationToken = default);
 }
