@@ -55,6 +55,15 @@ using Watchgate.Locksight.Platform.WarehouseManagement.Infrastructure.Persistenc
 using Watchgate.Locksight.Platform.WarehouseManagement.Interfaces.Acl;
 using Watchgate.Locksight.Platform.WarehouseManagement.Resources;
 using Watchgate.Locksight.Platform.Iam.Infrastructure.Pipeline.Middleware.Attributes;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Application.Acl;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Application.CommandServices;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Application.Internal.CommandServices;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Application.Internal.QueryServices;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Application.QueryServices;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Domain.Repositories;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Interfaces.Acl;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Resources;
 using ProblemDetailsFactory = Watchgate.Locksight.Platform.Shared.Interfaces.Rest.ProblemDetails.ProblemDetailsFactory;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -94,6 +103,7 @@ builder.Services.AddSingleton<IStringLocalizer<IamMessages>, StringLocalizer<Iam
 builder.Services.AddSingleton<IStringLocalizer<WarehouseManagementMessages>, StringLocalizer<WarehouseManagementMessages>>();
 builder.Services.AddSingleton<IStringLocalizer<SensorIntegrationMessages>, StringLocalizer<SensorIntegrationMessages>>();
 builder.Services.AddSingleton<IStringLocalizer<SecurityAlertsMessages>, StringLocalizer<SecurityAlertsMessages>>();
+builder.Services.AddSingleton<IStringLocalizer<SubscriptionManagementMessages>, StringLocalizer<SubscriptionManagementMessages>>();
 
 builder.Services.AddSingleton<ProblemDetailsFactory>();
 
@@ -124,6 +134,8 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IEventDispatcher, EventDispatcher>();
 
+
+
 // IAM Bounded Context
 builder.Services.Configure<TokenSettings>(builder.Configuration.GetSection("TokenSettings"));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -153,6 +165,12 @@ builder.Services.AddScoped<IAlertIncidentRepository, AlertIncidentRepository>();
 builder.Services.AddScoped<ISecurityAlertCommandService, SecurityAlertCommandService>();
 builder.Services.AddScoped<ISecurityAlertQueryService, SecurityAlertQueryService>();
 builder.Services.AddScoped<IEventHandler<SecurityAlertTriggeredEvent>, SecurityAlertTriggeredEventHandler>();
+
+// Subscription Management Bounded Context 
+builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+builder.Services.AddScoped<ISubscriptionContextFacade, SubscriptionContextFacade>();
+builder.Services.AddScoped<ISubscriptionCommandService, SubscriptionCommandService>();
+builder.Services.AddScoped<ISubscriptionQueryService, SubscriptionQueryService>();
 
 // Mediator Configuration
 builder.Services.AddScoped(typeof(ICommandPipelineBehavior<>), typeof(LoggingCommandBehavior<>));

@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="CategoryCreationFailed" xml:space="preserve">
+   <value>Ocurrió un error al crear la categoría de la suscripción.</value>
+ </data>
+    <data name="InvalidCardNumber" xml:space="preserve">
+   <value>El número de tarjeta debe contener exactamente 16 dígitos.</value>
+ </data>
+    <data name="CompanyIdRequired" xml:space="preserve">
+   <value>Se requiere un ID de compañía válido para procesar la suscripción.</value>
+ </data>
+    <data name="AlreadyCanceled" xml:space="preserve">
+   <value>La suscripción especificada ya se encuentra cancelada.</value>
+ </data>
+    <data name="CannotChangeCanceledPlan" xml:space="preserve">
+   <value>No se puede cambiar el plan de una suscripción cancelada.</value>
+ </data>
+    <data name="AlreadyOnThisPlan" xml:space="preserve">
+   <value>La compañía ya se encuentra suscrita a este plan.</value>
+ </data>
+    <data name="SubscriptionNotFound" xml:space="preserve">
+   <value>No se encontró la suscripción especificada.</value>
+ </data>
+</root>

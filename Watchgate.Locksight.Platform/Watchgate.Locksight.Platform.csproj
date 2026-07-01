@@ -29,6 +29,7 @@
 
     <ItemGroup>
       <Folder Include="SecurityAlerts\" />
+      <Folder Include="SubscriptionManagement\" />
     </ItemGroup>
 
 </Project>

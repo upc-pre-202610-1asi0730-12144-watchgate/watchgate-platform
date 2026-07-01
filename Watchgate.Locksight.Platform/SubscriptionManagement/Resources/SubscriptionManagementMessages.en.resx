@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="CategoryCreationFailed" xml:space="preserve">
+   <value>An error occurred while creating the subscription category.</value>
+ </data>
+    <data name="InvalidCardNumber" xml:space="preserve">
+   <value>The card number must contain exactly 16 digits.</value>
+ </data>
+    <data name="CompanyIdRequired" xml:space="preserve">
+   <value>A valid Company ID is required to process the subscription.</value>
+ </data>
+    <data name="AlreadyCanceled" xml:space="preserve">
+   <value>The specified subscription is already canceled.</value>
+ </data>
+    <data name="CannotChangeCanceledPlan" xml:space="preserve">
+   <value>Cannot change the plan of a canceled subscription.</value>
+ </data>
+    <data name="AlreadyOnThisPlan" xml:space="preserve">
+   <value>The company is already subscribed to this plan.</value>
+ </data>
+    <data name="SubscriptionNotFound" xml:space="preserve">
+   <value>The specified subscription was not found.</value>
+ </data>
+</root>
