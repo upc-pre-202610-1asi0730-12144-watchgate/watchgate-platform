@@ -1,0 +1,2 @@
+namespace Watchgate.Locksight.Platform.Reporting.Domain.Model.Commands;
+public record ScheduleReportCommand(int CompanyId, int? WarehouseId, string Name, string Frequency, string Format, string RecipientEmail, DateTime StartsAt);

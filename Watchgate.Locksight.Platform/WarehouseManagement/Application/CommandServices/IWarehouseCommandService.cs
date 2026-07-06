@@ -9,6 +9,7 @@ public interface IWarehouseCommandService
 {
     Task<Result<Warehouse>> Handle(CreateWarehouseCommand command, CancellationToken cancellationToken = default);
     Task<Result<Warehouse>> Handle(UpdateWarehouseCommand command, CancellationToken cancellationToken = default);
+    Task<Result<Warehouse>> Handle(DeactivateWarehouseCommand command, CancellationToken cancellationToken = default);
     Task<Result> Handle(DeleteWarehouseCommand command, CancellationToken cancellationToken = default);
     Task<Result<WarehouseZone>> Handle(CreateWarehouseZoneCommand command, CancellationToken cancellationToken = default);
     Task<Result<WarehouseZone>> Handle(UpdateZoneRiskLevelCommand command, CancellationToken cancellationToken = default);

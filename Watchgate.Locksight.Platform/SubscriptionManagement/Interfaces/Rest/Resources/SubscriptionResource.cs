@@ -1,0 +1,2 @@
+namespace Watchgate.Locksight.Platform.SubscriptionManagement.Interfaces.Rest.Resources;
+public record SubscriptionResource(int Id, int CompanyId, int PlanId, string? PlanName, string Status, DateTime StartedAt, DateTime? CancelledAt);

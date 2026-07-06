@@ -4,6 +4,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.OpenApi;
 using Watchgate.Locksight.Platform.Iam.Application.Acl;
+using Watchgate.Locksight.Platform.CompanyRegistration.Application.CommandServices;
+using Watchgate.Locksight.Platform.CompanyRegistration.Application.Internal.CommandServices;
+using Watchgate.Locksight.Platform.CompanyRegistration.Application.Internal.QueryServices;
+using Watchgate.Locksight.Platform.CompanyRegistration.Application.QueryServices;
+using Watchgate.Locksight.Platform.CompanyRegistration.Domain.Repositories;
+using Watchgate.Locksight.Platform.CompanyRegistration.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
+using Watchgate.Locksight.Platform.Reporting.Application.CommandServices;
+using Watchgate.Locksight.Platform.Reporting.Application.Internal.CommandServices;
+using Watchgate.Locksight.Platform.Reporting.Application.Internal.QueryServices;
+using Watchgate.Locksight.Platform.Reporting.Application.QueryServices;
+using Watchgate.Locksight.Platform.Reporting.Domain.Repositories;
+using Watchgate.Locksight.Platform.Reporting.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 using Watchgate.Locksight.Platform.Iam.Application.CommandServices;
 using Watchgate.Locksight.Platform.Iam.Application.Internal.CommandServices;
 using Watchgate.Locksight.Platform.Iam.Application.Internal.OutboundServices;
@@ -45,6 +57,12 @@ using Watchgate.Locksight.Platform.Shared.Infrastructure.Mediator.Cortex.Configu
 using Watchgate.Locksight.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 using Watchgate.Locksight.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 using Watchgate.Locksight.Platform.Shared.Infrastructure.Pipeline.Middleware.Extensions;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Application.CommandServices;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Application.Internal.CommandServices;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Application.Internal.QueryServices;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Application.QueryServices;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Domain.Repositories;
+using Watchgate.Locksight.Platform.SubscriptionManagement.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 using Watchgate.Locksight.Platform.WarehouseManagement.Application.Acl;
 using Watchgate.Locksight.Platform.WarehouseManagement.Application.CommandServices;
 using Watchgate.Locksight.Platform.WarehouseManagement.Application.Internal.CommandServices;
@@ -124,12 +142,21 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IEventDispatcher, EventDispatcher>();
 
+// Company Registration Bounded Context
+builder.Services.AddScoped<ICompanyAccountRepository, CompanyAccountRepository>();
+builder.Services.AddScoped<ICompanyRegistrationCommandService, CompanyRegistrationCommandService>();
+builder.Services.AddScoped<ICompanyRegistrationQueryService, CompanyRegistrationQueryService>();
+
 // IAM Bounded Context
 builder.Services.Configure<TokenSettings>(builder.Configuration.GetSection("TokenSettings"));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+builder.Services.AddScoped<IUserInvitationRepository, UserInvitationRepository>();
+builder.Services.AddScoped<IUserAccessProfileRepository, UserAccessProfileRepository>();
 builder.Services.AddScoped<IUserCommandService, UserCommandService>();
 builder.Services.AddScoped<IUserQueryService, UserQueryService>();
+builder.Services.AddScoped<IUserAccessCommandService, UserAccessCommandService>();
+builder.Services.AddScoped<IUserAccessQueryService, UserAccessQueryService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IHashingService, HashingService>();
 builder.Services.AddScoped<IIamContextFacade, IamContextFacade>();
@@ -146,6 +173,23 @@ builder.Services.AddScoped<ISensorRepository, SensorRepository>();
 builder.Services.AddScoped<ISensorCommandService, SensorCommandService>();
 builder.Services.AddScoped<ISensorQueryService, SensorQueryService>();
 builder.Services.AddScoped<ISensorContextFacade, SensorContextFacade>();
+
+// Reporting Bounded Context
+builder.Services.AddScoped<ISecurityReportRepository, SecurityReportRepository>();
+builder.Services.AddScoped<IScheduledReportRepository, ScheduledReportRepository>();
+builder.Services.AddScoped<IEventLogRepository, EventLogRepository>();
+builder.Services.AddScoped<IReportingCommandService, ReportingCommandService>();
+builder.Services.AddScoped<IReportingQueryService, ReportingQueryService>();
+
+// Subscription Management Bounded Context
+builder.Services.AddScoped<ISubscriptionPlanRepository, SubscriptionPlanRepository>();
+builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+builder.Services.AddScoped<ISubscriptionCommandService, SubscriptionCommandService>();
+builder.Services.AddScoped<ISubscriptionQueryService, SubscriptionQueryService>();
+builder.Services.AddScoped<IBillingCommandService, BillingCommandService>();
+builder.Services.AddScoped<IBillingQueryService, BillingQueryService>();
 
 // Security Alerts Bounded Context
 builder.Services.AddScoped<ISecurityAlertRepository, SecurityAlertRepository>();

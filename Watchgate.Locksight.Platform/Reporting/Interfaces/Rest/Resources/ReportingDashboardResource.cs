@@ -1,0 +1,2 @@
+namespace Watchgate.Locksight.Platform.Reporting.Interfaces.Rest.Resources;
+public record ReportingDashboardResource(int CompanyId, DateTime From, DateTime To, int TotalEvents, int OpenEvents, int ResolvedEvents, int CriticalEvents, int HighEvents, int MediumEvents, int LowEvents);

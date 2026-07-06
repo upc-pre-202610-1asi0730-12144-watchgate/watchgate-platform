@@ -8,4 +8,5 @@ public interface IUserCommandService
 {
     Task<Result<(User user, string token)>> Handle(SignInCommand command, CancellationToken cancellationToken);
     Task<Result<(User user, string token)>> Handle(SignUpCommand command, CancellationToken cancellationToken);
+    Task<Result<User>> Handle(ResetPasswordCommand command, CancellationToken cancellationToken);
 }

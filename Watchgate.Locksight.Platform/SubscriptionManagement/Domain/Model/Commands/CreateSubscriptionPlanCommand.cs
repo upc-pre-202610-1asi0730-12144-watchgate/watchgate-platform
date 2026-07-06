@@ -1,0 +1,2 @@
+namespace Watchgate.Locksight.Platform.SubscriptionManagement.Domain.Model.Commands;
+public record CreateSubscriptionPlanCommand(string Name, string Description, decimal MonthlyPrice, int MaxWarehouses, int MaxSensors);

@@ -1,4 +1,5 @@
 using Watchgate.Locksight.Platform.Shared.Application.Model;
+using Watchgate.Locksight.Platform.WarehouseManagement.Application.Model;
 using Watchgate.Locksight.Platform.WarehouseManagement.Application.QueryServices;
 using Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model;
 using Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.Aggregates;
@@ -41,5 +42,22 @@ public class WarehouseQueryService(
     {
         var zones = await zoneRepository.FindByWarehouseIdAsync(query.WarehouseId, cancellationToken);
         return Result<IEnumerable<WarehouseZone>>.Success(zones);
+    }
+
+    public async Task<Result<WarehouseDashboard>> Handle(GetWarehouseDashboardByCompanyIdQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        var warehouses = (await warehouseRepository.FindByCompanyIdAsync(query.CompanyId, cancellationToken)).ToList();
+        var zones = warehouses.SelectMany(warehouse => warehouse.Zones).ToList();
+        var dashboard = new WarehouseDashboard(
+            query.CompanyId,
+            warehouses.Count,
+            warehouses.Count(warehouse => warehouse.Status == "ACTIVE"),
+            warehouses.Count(warehouse => warehouse.Status != "ACTIVE"),
+            zones.Count,
+            zones.Count(zone => zone.RiskLevel == "HIGH"),
+            zones.Count(zone => zone.RiskLevel == "MEDIUM"),
+            zones.Count(zone => zone.RiskLevel == "LOW"));
+        return Result<WarehouseDashboard>.Success(dashboard);
     }
 }

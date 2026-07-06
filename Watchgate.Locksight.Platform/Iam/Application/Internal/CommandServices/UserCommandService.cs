@@ -72,4 +72,16 @@ public class UserCommandService(
                 _localizer[nameof(IamError.InternalServerError)]);
         }
     }
+
+    public async Task<Result<User>> Handle(ResetPasswordCommand command, CancellationToken cancellationToken)
+    {
+        var user = await userRepository.FindByIdAsync(command.UserId, cancellationToken);
+        if (user is null)
+            return Result<User>.Failure(IamError.UserNotFound, _localizer[nameof(IamError.UserNotFound)]);
+
+        user.UpdatePassword(hashingService.HashPassword(command.NewPassword));
+        userRepository.Update(user);
+        await unitOfWork.CompleteAsync(cancellationToken);
+        return Result<User>.Success(user);
+    }
 }

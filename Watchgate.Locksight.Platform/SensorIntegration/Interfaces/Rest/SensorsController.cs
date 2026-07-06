@@ -1,4 +1,6 @@
+using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 using Watchgate.Locksight.Platform.Iam.Infrastructure.Pipeline.Middleware.Attributes;
 using Watchgate.Locksight.Platform.Shared.Interfaces.Rest.ProblemDetails;
 using Watchgate.Locksight.Platform.SensorIntegration.Application.CommandServices;
@@ -13,26 +15,31 @@ namespace Watchgate.Locksight.Platform.SensorIntegration.Interfaces.Rest;
 [Authorize]
 [ApiController]
 [Route("api/v1/[controller]")]
-[Produces("application/json")]
+[Produces(MediaTypeNames.Application.Json)]
+[SwaggerTag("Available Sensor Integration endpoints.")]
 public class SensorsController(
     ISensorCommandService sensorCommandService,
     ISensorQueryService sensorQueryService,
     ProblemDetailsFactory problemDetailsFactory) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> CreateSensor(
-        [FromBody] CreateSensorResource resource,
-        CancellationToken cancellationToken)
+    [SwaggerOperation(Summary = "Create a sensor", Description = "Registers an IoT sensor and links it to a warehouse zone.", OperationId = "CreateSensor")]
+    [SwaggerResponse(StatusCodes.Status201Created, "The sensor was created.", typeof(SensorResource))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "The sensor could not be created.")]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
+    public async Task<IActionResult> CreateSensor([FromBody] CreateSensorResource resource, CancellationToken cancellationToken)
     {
         var command = CreateSensorCommandFromResourceAssembler.ToCommandFromResource(resource);
         var result = await sensorCommandService.Handle(command, cancellationToken);
         return SensorActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
-            sensor => CreatedAtAction(nameof(GetSensorById),
-                new { sensorId = sensor.Id },
-                SensorResourceFromEntityAssembler.ToResourceFromEntity(sensor)));
+            sensor => CreatedAtAction(nameof(GetSensorById), new { sensorId = sensor.Id }, SensorResourceFromEntityAssembler.ToResourceFromEntity(sensor)));
     }
 
     [HttpGet("{sensorId:int}")]
+    [SwaggerOperation(Summary = "Get sensor by ID", Description = "Gets sensor details by identifier.", OperationId = "GetSensorById")]
+    [SwaggerResponse(StatusCodes.Status200OK, "The sensor was retrieved.", typeof(SensorResource))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The sensor was not found.")]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetSensorById(int sensorId, CancellationToken cancellationToken)
     {
         var query = new GetSensorByIdQuery(sensorId);
@@ -42,6 +49,9 @@ public class SensorsController(
     }
 
     [HttpGet("zone/{zoneId:int}")]
+    [SwaggerOperation(Summary = "Get sensors by zone", Description = "Lists sensors linked to a warehouse zone.", OperationId = "GetSensorsByZoneId")]
+    [SwaggerResponse(StatusCodes.Status200OK, "The sensors were retrieved.", typeof(IEnumerable<SensorResource>))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetSensorsByZoneId(int zoneId, CancellationToken cancellationToken)
     {
         var query = new GetSensorsByZoneIdQuery(zoneId);
@@ -51,6 +61,9 @@ public class SensorsController(
     }
 
     [HttpGet("company/{companyId:int}")]
+    [SwaggerOperation(Summary = "Get sensors by company", Description = "Lists all sensors registered for a company.", OperationId = "GetSensorsByCompanyId")]
+    [SwaggerResponse(StatusCodes.Status200OK, "The sensors were retrieved.", typeof(IEnumerable<SensorResource>))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetSensorsByCompanyId(int companyId, CancellationToken cancellationToken)
     {
         var query = new GetSensorsByCompanyIdQuery(companyId);
@@ -60,10 +73,11 @@ public class SensorsController(
     }
 
     [HttpPatch("{sensorId:int}/status")]
-    public async Task<IActionResult> UpdateSensorStatus(
-        int sensorId,
-        [FromBody] UpdateSensorStatusResource resource,
-        CancellationToken cancellationToken)
+    [SwaggerOperation(Summary = "Update sensor status", Description = "Changes the operational status of a sensor.", OperationId = "UpdateSensorStatus")]
+    [SwaggerResponse(StatusCodes.Status200OK, "The sensor status was updated.", typeof(SensorResource))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The sensor was not found.")]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
+    public async Task<IActionResult> UpdateSensorStatus(int sensorId, [FromBody] UpdateSensorStatusResource resource, CancellationToken cancellationToken)
     {
         var command = new UpdateSensorStatusCommand(sensorId, resource.Status);
         var result = await sensorCommandService.Handle(command, cancellationToken);
@@ -72,13 +86,26 @@ public class SensorsController(
     }
 
     [HttpPost("{sensorId:int}/readings")]
-    public async Task<IActionResult> RecordSensorReading(
-        int sensorId,
-        [FromBody] RecordSensorReadingResource resource,
-        CancellationToken cancellationToken)
+    [SwaggerOperation(Summary = "Record sensor reading", Description = "Stores the latest reading received from a sensor.", OperationId = "RecordSensorReading")]
+    [SwaggerResponse(StatusCodes.Status200OK, "The sensor reading was recorded.", typeof(SensorResource))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The sensor was not found.")]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
+    public async Task<IActionResult> RecordSensorReading(int sensorId, [FromBody] RecordSensorReadingResource resource, CancellationToken cancellationToken)
     {
         var command = new RecordSensorReadingCommand(sensorId, resource.Value);
         var result = await sensorCommandService.Handle(command, cancellationToken);
+        return SensorActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
+            sensor => Ok(SensorResourceFromEntityAssembler.ToResourceFromEntity(sensor)));
+    }
+
+    [HttpPatch("{sensorId:int}/unlink")]
+    [SwaggerOperation(Summary = "Unlink sensor", Description = "Unlinks a sensor from active monitoring without deleting its historical data.", OperationId = "UnlinkSensor")]
+    [SwaggerResponse(StatusCodes.Status200OK, "The sensor was unlinked.", typeof(SensorResource))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The sensor was not found.")]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
+    public async Task<IActionResult> UnlinkSensor(int sensorId, CancellationToken cancellationToken)
+    {
+        var result = await sensorCommandService.Handle(new UnlinkSensorCommand(sensorId), cancellationToken);
         return SensorActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             sensor => Ok(SensorResourceFromEntityAssembler.ToResourceFromEntity(sensor)));
     }

@@ -1,0 +1,2 @@
+namespace Watchgate.Locksight.Platform.Reporting.Interfaces.Rest.Resources;
+public record EventLogEntryResource(int Id, string EventType, string Severity, string Status, string Description, int SensorId, int CompanyId, DateTime OccurredAt);

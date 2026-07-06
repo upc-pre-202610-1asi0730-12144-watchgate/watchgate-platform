@@ -7,3 +7,6 @@ riderModule.iml
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+# Local secrets
+.env

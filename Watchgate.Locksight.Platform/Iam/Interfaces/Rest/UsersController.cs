@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using Swashbuckle.AspNetCore.Annotations;
 using Watchgate.Locksight.Platform.Iam.Application.QueryServices;
+using Watchgate.Locksight.Platform.Iam.Application.CommandServices;
+using Watchgate.Locksight.Platform.Iam.Domain.Model;
+using Watchgate.Locksight.Platform.Iam.Domain.Model.Commands;
 using Watchgate.Locksight.Platform.Iam.Domain.Model.Queries;
 using Watchgate.Locksight.Platform.Iam.Infrastructure.Pipeline.Middleware.Attributes;
 using Watchgate.Locksight.Platform.Iam.Interfaces.Rest.Resources;
@@ -19,6 +22,7 @@ namespace Watchgate.Locksight.Platform.Iam.Interfaces.Rest;
 [Produces(MediaTypeNames.Application.Json)]
 [SwaggerTag("Available Users endpoints")]
 public class UsersController(
+    IUserCommandService userCommandService,
     IUserQueryService userQueryService,
     IStringLocalizer<ErrorMessages> errorLocalizer,
     ProblemDetailsFactory problemDetailsFactory) : ControllerBase
@@ -42,5 +46,19 @@ public class UsersController(
         return IamActionResultAssembler.ToActionResultFromGetUserByIdResult(
             this, user, errorLocalizer, problemDetailsFactory,
             foundUser => Ok(UserResourceFromEntityAssembler.ToResourceFromEntity(foundUser)));
+    }
+
+    [HttpPatch("{id:int}/password")]
+    [SwaggerOperation(Summary = "Reset password", Description = "Updates a user password using the configured hashing service.", OperationId = "ResetPassword")]
+    [SwaggerResponse(StatusCodes.Status200OK, "Password reset completed", typeof(UserResource))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "User not found")]
+    public async Task<IActionResult> ResetPassword(int id, [FromBody] ResetPasswordResource resource, CancellationToken cancellationToken)
+    {
+        var result = await userCommandService.Handle(new ResetPasswordCommand(id, resource.NewPassword), cancellationToken);
+        if (result.IsSuccess)
+            return Ok(UserResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
+
+        var statusCode = result.Error is IamError.UserNotFound ? StatusCodes.Status404NotFound : StatusCodes.Status400BadRequest;
+        return problemDetailsFactory.CreateProblemDetails(this, statusCode, result.Error, result.Message);
     }
 }

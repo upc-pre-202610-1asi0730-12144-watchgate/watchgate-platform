@@ -17,6 +17,36 @@ public class SecurityAlertCommandService(
     IUnitOfWork unitOfWork,
     IEventDispatcher eventDispatcher) : ISecurityAlertCommandService
 {
+    private async Task<Result<SecurityAlert>> UpdateAlertStatusAsync(
+        int alertId,
+        Action<SecurityAlert> update,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var alert = await alertRepository.FindByIdAsync(alertId, cancellationToken);
+            if (alert is null)
+                return Result<SecurityAlert>.Failure(SecurityAlertsError.AlertNotFound, $"Alert with id {alertId} was not found.");
+
+            update(alert);
+            alertRepository.Update(alert);
+            await unitOfWork.CompleteAsync(cancellationToken);
+            return Result<SecurityAlert>.Success(alert);
+        }
+        catch (OperationCanceledException)
+        {
+            return Result<SecurityAlert>.Failure(SecurityAlertsError.OperationCancelled, "Operation was cancelled.");
+        }
+        catch (DbUpdateException)
+        {
+            return Result<SecurityAlert>.Failure(SecurityAlertsError.DatabaseError, "A database error occurred.");
+        }
+        catch (Exception)
+        {
+            return Result<SecurityAlert>.Failure(SecurityAlertsError.InternalServerError, "An unexpected error occurred.");
+        }
+    }
+
     public async Task<Result<SecurityAlert>> Handle(CreateSecurityAlertCommand command, CancellationToken cancellationToken = default)
     {
         try
@@ -47,29 +77,23 @@ public class SecurityAlertCommandService(
 
     public async Task<Result<SecurityAlert>> Handle(ResolveAlertCommand command, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var alert = await alertRepository.FindByIdAsync(command.AlertId, cancellationToken);
-            if (alert is null)
-                return Result<SecurityAlert>.Failure(SecurityAlertsError.AlertNotFound, $"Alert with id {command.AlertId} was not found.");
-
-            alert.Resolve();
-            await unitOfWork.CompleteAsync(cancellationToken);
-            return Result<SecurityAlert>.Success(alert);
-        }
-        catch (OperationCanceledException)
-        {
-            return Result<SecurityAlert>.Failure(SecurityAlertsError.OperationCancelled, "Operation was cancelled.");
-        }
-        catch (DbUpdateException)
-        {
-            return Result<SecurityAlert>.Failure(SecurityAlertsError.DatabaseError, "A database error occurred.");
-        }
-        catch (Exception)
-        {
-            return Result<SecurityAlert>.Failure(SecurityAlertsError.InternalServerError, "An unexpected error occurred.");
-        }
+        return await UpdateAlertStatusAsync(command.AlertId, alert => alert.Resolve(), cancellationToken);
     }
+
+    public async Task<Result<SecurityAlert>> Handle(AcknowledgeAlertCommand command, CancellationToken cancellationToken = default) =>
+        await UpdateAlertStatusAsync(command.AlertId, alert => alert.Acknowledge(), cancellationToken);
+
+    public async Task<Result<SecurityAlert>> Handle(MarkAlertAsAttendedCommand command, CancellationToken cancellationToken = default) =>
+        await UpdateAlertStatusAsync(command.AlertId, alert => alert.MarkAttended(), cancellationToken);
+
+    public async Task<Result<SecurityAlert>> Handle(EscalateAlertCommand command, CancellationToken cancellationToken = default) =>
+        await UpdateAlertStatusAsync(command.AlertId, alert => alert.Escalate(), cancellationToken);
+
+    public async Task<Result<SecurityAlert>> Handle(FlagAlertAsFalseAlarmCommand command, CancellationToken cancellationToken = default) =>
+        await UpdateAlertStatusAsync(command.AlertId, alert => alert.FlagAsFalseAlarm(), cancellationToken);
+
+    public async Task<Result<SecurityAlert>> Handle(ClassifyAlertPriorityCommand command, CancellationToken cancellationToken = default) =>
+        await UpdateAlertStatusAsync(command.AlertId, alert => alert.UpdateSeverity(command.Severity), cancellationToken);
 
     public async Task<Result<AlertIncident>> Handle(CreateAlertIncidentCommand command, CancellationToken cancellationToken = default)
     {

@@ -59,6 +59,20 @@ public class WarehouseCommandService(
         return Result<Warehouse>.Success(warehouse);
     }
 
+    public async Task<Result<Warehouse>> Handle(DeactivateWarehouseCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        var warehouse = await warehouseRepository.FindByIdAsync(command.WarehouseId, cancellationToken);
+        if (warehouse is null)
+            return Result<Warehouse>.Failure(WarehouseManagementError.WarehouseNotFound,
+                _localizer[nameof(WarehouseManagementError.WarehouseNotFound)]);
+
+        warehouse.Deactivate();
+        warehouseRepository.Update(warehouse);
+        await unitOfWork.CompleteAsync(cancellationToken);
+        return Result<Warehouse>.Success(warehouse);
+    }
+
     public async Task<Result> Handle(DeleteWarehouseCommand command, CancellationToken cancellationToken = default)
     {
         var warehouse = await warehouseRepository.FindByIdAsync(command.WarehouseId, cancellationToken);
@@ -90,6 +104,10 @@ public class WarehouseCommandService(
         if (zone is null)
             return Result<WarehouseZone>.Failure(WarehouseManagementError.ZoneNotFound,
                 _localizer[nameof(WarehouseManagementError.ZoneNotFound)]);
+        if (zone.WarehouseId != command.WarehouseId)
+            return Result<WarehouseZone>.Failure(WarehouseManagementError.ZoneNotFound,
+                _localizer[nameof(WarehouseManagementError.ZoneNotFound)]);
+
         zone.AssignRiskLevel(command.RiskLevel);
         zoneRepository.Update(zone);
         await unitOfWork.CompleteAsync(cancellationToken);

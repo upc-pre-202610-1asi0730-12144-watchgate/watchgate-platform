@@ -28,6 +28,8 @@ public partial class Sensor : IAuditableEntity
 
     public void UpdateStatus(string status) => Status = status;
 
+    public void Unlink() => Status = "UNLINKED";
+
     public void RecordReading(double value)
     {
         LastReading = value;

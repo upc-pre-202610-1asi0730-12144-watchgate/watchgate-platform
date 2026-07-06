@@ -1,0 +1,2 @@
+namespace Watchgate.Locksight.Platform.Reporting.Interfaces.Rest.Resources;
+public record ScheduledReportResource(int Id, int CompanyId, int? WarehouseId, string Name, string Frequency, string Format, string RecipientEmail, bool IsActive, DateTime StartsAt);

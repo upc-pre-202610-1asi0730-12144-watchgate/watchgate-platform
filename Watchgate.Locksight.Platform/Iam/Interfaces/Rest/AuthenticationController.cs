@@ -53,4 +53,12 @@ public class AuthenticationController(
                 AuthenticatedUserResourceFromEntityAssembler.ToResourceFromEntity(
                     userAndToken.user, userAndToken.token)));
     }
+
+    [HttpPost("logout")]
+    [SwaggerOperation(Summary = "Logout", Description = "Completes the logout flow for JWT clients. The frontend must discard the token.", OperationId = "Logout")]
+    [SwaggerResponse(StatusCodes.Status200OK, "The user session was ended on the client side")]
+    public IActionResult Logout()
+    {
+        return Ok(new { message = "User session ended. Remove the JWT token on the client." });
+    }
 }

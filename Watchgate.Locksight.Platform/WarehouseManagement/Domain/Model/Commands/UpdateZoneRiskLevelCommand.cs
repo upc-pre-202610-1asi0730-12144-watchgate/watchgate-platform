@@ -1,2 +1,2 @@
-﻿namespace Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.Commands;
-public record UpdateZoneRiskLevelCommand(int ZoneId, string RiskLevel);
+namespace Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.Commands;
+public record UpdateZoneRiskLevelCommand(int WarehouseId, int ZoneId, string RiskLevel);

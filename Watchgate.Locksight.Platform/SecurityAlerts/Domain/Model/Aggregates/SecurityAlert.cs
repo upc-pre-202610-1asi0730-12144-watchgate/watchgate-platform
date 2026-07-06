@@ -35,5 +35,15 @@ public partial class SecurityAlert : IAuditableEntity
 
     public void Acknowledge() => Status = "ACKNOWLEDGED";
 
+    public void MarkAttended() => Status = "ATTENDED";
+
+    public void Escalate()
+    {
+        Status = "ESCALATED";
+        Severity = "CRITICAL";
+    }
+
+    public void FlagAsFalseAlarm() => Status = "FALSE_ALARM";
+
     public void UpdateSeverity(string severity) => Severity = severity;
 }

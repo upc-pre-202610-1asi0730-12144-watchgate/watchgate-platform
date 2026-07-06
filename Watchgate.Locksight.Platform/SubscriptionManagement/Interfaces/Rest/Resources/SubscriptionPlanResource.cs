@@ -1,0 +1,2 @@
+namespace Watchgate.Locksight.Platform.SubscriptionManagement.Interfaces.Rest.Resources;
+public record SubscriptionPlanResource(int Id, string Name, string Description, decimal MonthlyPrice, int MaxWarehouses, int MaxSensors, bool IsActive);
