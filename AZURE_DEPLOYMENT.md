@@ -34,6 +34,24 @@ Use this option because the project targets `.NET 10` and has a Dockerfile.
 5. Configure the environment variables listed above in Azure.
 6. Make sure the app can connect to MySQL through firewall/VNet settings.
 
+Current final delivery image:
+
+```text
+locksightacr12144.azurecr.io/locksight-platform:3.0.0
+```
+
+The GitHub Actions workflow also publishes `locksight-platform:latest` for easier redeployments.
+
+## Health Check
+
+The deployed API exposes a public health endpoint:
+
+```text
+/api/v1/health
+```
+
+Use it to verify the Azure deployment, Docker image version, database provider metadata, and API availability before testing the frontend.
+
 ## Database Migrations
 
 Before first production use, apply migrations with the production connection string:

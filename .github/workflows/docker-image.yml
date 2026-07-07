@@ -8,6 +8,9 @@ on:
 jobs:
   docker-build-push:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: locksight-platform
+      IMAGE_VERSION: 3.0.0
 
     steps:
       - name: Checkout
@@ -21,7 +24,13 @@ jobs:
           password: ${{ secrets.ACR_PASSWORD }}
 
       - name: Build Docker image
-        run: docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/locksight-platform:1.0.0 .
+        run: |
+          docker build \
+            -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_VERSION }} \
+            -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest \
+            .
 
       - name: Push Docker image
-        run: docker push ${{ secrets.ACR_LOGIN_SERVER }}/locksight-platform:1.0.0
+        run: |
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_VERSION }}
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
