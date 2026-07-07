@@ -231,6 +231,18 @@ app.UseHttpsRedirection();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapGet("/", () => Results.Redirect("/swagger")).WithMetadata(new AllowAnonymousAttribute());
+app.MapGet("/api/v1/health", (IConfiguration configuration, IWebHostEnvironment environment) => Results.Ok(new
+{
+    status = "Healthy",
+    service = "Watchgate LockSight Platform API",
+    version = "3.0.0",
+    environment = environment.EnvironmentName,
+    databaseProvider = "Azure Database for MySQL",
+    deployedAtUtc = DateTime.UtcNow,
+    apiBasePath = "/api/v1",
+    swagger = "/swagger",
+    databaseSchema = configuration["DATABASE_SCHEMA"] ?? "watchgate_locksight_db"
+})).WithMetadata(new AllowAnonymousAttribute());
 
 app.UseCors("AllowAllPolicy");
 app.UseRequestAuthorization();
