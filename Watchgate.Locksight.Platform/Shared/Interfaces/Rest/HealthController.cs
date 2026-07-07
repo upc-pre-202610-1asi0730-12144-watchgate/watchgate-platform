@@ -5,13 +5,13 @@ using Watchgate.Locksight.Platform.Iam.Infrastructure.Pipeline.Middleware.Attrib
 
 namespace Watchgate.Locksight.Platform.Shared.Interfaces.Rest;
 
-[AllowAnonymous]
 [ApiController]
 [Route("api/v1/health")]
 [SwaggerTag("Available platform health endpoint.")]
 public class HealthController(IConfiguration configuration, IWebHostEnvironment environment) : ControllerBase
 {
     [HttpGet]
+    [AllowAnonymous]
     [SwaggerOperation(
         Summary = "Get platform health",
         Description = "Returns deployment status, API version and public database configuration metadata.",
