@@ -148,6 +148,9 @@ builder.Services.AddScoped<ICompanyRegistrationCommandService, CompanyRegistrati
 builder.Services.AddScoped<ICompanyRegistrationQueryService, CompanyRegistrationQueryService>();
 
 // IAM Bounded Context
+var tokenSecret = builder.Configuration["TOKEN_SECRET"];
+if (!string.IsNullOrWhiteSpace(tokenSecret))
+    builder.Configuration["TokenSettings:Secret"] = tokenSecret;
 builder.Services.Configure<TokenSettings>(builder.Configuration.GetSection("TokenSettings"));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
