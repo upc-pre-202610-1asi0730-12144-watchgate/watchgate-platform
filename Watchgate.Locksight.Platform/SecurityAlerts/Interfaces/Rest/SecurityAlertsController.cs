@@ -152,7 +152,7 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> CreateIncident([FromBody] CreateAlertIncidentResource resource, CancellationToken cancellationToken)
     {
-        var command = new CreateAlertIncidentCommand(resource.Title, resource.Description, resource.Priority, resource.CompanyId);
+        var command = new CreateAlertIncidentCommand(resource.Title, resource.Description, resource.Priority, resource.CompanyId, resource.RelatedAlertId);
         var result = await alertCommandService.Handle(command, cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             incident => CreatedAtAction(nameof(GetIncidentById), new { incidentId = incident.Id }, SecurityAlertResourceFromEntityAssembler.ToIncidentResourceFromEntity(incident)));

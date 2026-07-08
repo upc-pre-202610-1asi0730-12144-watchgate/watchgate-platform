@@ -100,6 +100,15 @@ public class SecurityAlertCommandService(
         try
         {
             var incident = new AlertIncident(command.Title, command.Description, command.Priority, command.CompanyId);
+            if (command.RelatedAlertId is not null)
+            {
+                var relatedAlert = await alertRepository.FindByIdAsync(command.RelatedAlertId.Value, cancellationToken);
+                if (relatedAlert is null || relatedAlert.CompanyId != command.CompanyId)
+                    return Result<AlertIncident>.Failure(SecurityAlertsError.AlertNotFound, $"Alert with id {command.RelatedAlertId.Value} was not found.");
+
+                incident.RelatedAlerts.Add(relatedAlert);
+            }
+
             await incidentRepository.AddAsync(incident, cancellationToken);
             await unitOfWork.CompleteAsync(cancellationToken);
             return Result<AlertIncident>.Success(incident);
