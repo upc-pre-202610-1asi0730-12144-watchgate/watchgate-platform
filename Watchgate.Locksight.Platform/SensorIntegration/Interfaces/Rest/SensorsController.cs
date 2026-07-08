@@ -9,6 +9,9 @@ using Watchgate.Locksight.Platform.SensorIntegration.Domain.Model.Commands;
 using Watchgate.Locksight.Platform.SensorIntegration.Domain.Model.Queries;
 using Watchgate.Locksight.Platform.SensorIntegration.Interfaces.Rest.Resources;
 using Watchgate.Locksight.Platform.SensorIntegration.Interfaces.Rest.Transform;
+using Watchgate.Locksight.Platform.Shared.Interfaces.Rest.Extensions;
+using Watchgate.Locksight.Platform.WarehouseManagement.Application.QueryServices;
+using Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.Queries;
 
 namespace Watchgate.Locksight.Platform.SensorIntegration.Interfaces.Rest;
 
@@ -20,6 +23,7 @@ namespace Watchgate.Locksight.Platform.SensorIntegration.Interfaces.Rest;
 public class SensorsController(
     ISensorCommandService sensorCommandService,
     ISensorQueryService sensorQueryService,
+    IWarehouseQueryService warehouseQueryService,
     ProblemDetailsFactory problemDetailsFactory) : ControllerBase
 {
     [HttpPost]
@@ -29,7 +33,11 @@ public class SensorsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> CreateSensor([FromBody] CreateSensorResource resource, CancellationToken cancellationToken)
     {
-        var command = CreateSensorCommandFromResourceAssembler.ToCommandFromResource(resource);
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return Unauthorized();
+        if (!await CanAccessZone(resource.ZoneId, cancellationToken)) return Forbid();
+
+        var command = new CreateSensorCommand(resource.Name, resource.Type, resource.Unit, resource.ZoneId, companyId.Value);
         var result = await sensorCommandService.Handle(command, cancellationToken);
         return SensorActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             sensor => CreatedAtAction(nameof(GetSensorById), new { sensorId = sensor.Id }, SensorResourceFromEntityAssembler.ToResourceFromEntity(sensor)));
@@ -45,7 +53,11 @@ public class SensorsController(
         var query = new GetSensorByIdQuery(sensorId);
         var result = await sensorQueryService.Handle(query, cancellationToken);
         return SensorActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
-            sensor => Ok(SensorResourceFromEntityAssembler.ToResourceFromEntity(sensor)));
+            sensor =>
+            {
+                if (!BelongsToCurrentCompany(sensor.CompanyId)) return Forbid();
+                return Ok(SensorResourceFromEntityAssembler.ToResourceFromEntity(sensor));
+            });
     }
 
     [HttpGet("zone/{zoneId:int}")]
@@ -54,6 +66,8 @@ public class SensorsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetSensorsByZoneId(int zoneId, CancellationToken cancellationToken)
     {
+        if (!await CanAccessZone(zoneId, cancellationToken)) return Forbid();
+
         var query = new GetSensorsByZoneIdQuery(zoneId);
         var result = await sensorQueryService.Handle(query, cancellationToken);
         return SensorActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
@@ -66,7 +80,11 @@ public class SensorsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetSensorsByCompanyId(int companyId, CancellationToken cancellationToken)
     {
-        var query = new GetSensorsByCompanyIdQuery(companyId);
+        var currentCompanyId = HttpContext.CurrentCompanyId();
+        if (currentCompanyId is null) return Unauthorized();
+        if (companyId != currentCompanyId.Value) return Forbid();
+
+        var query = new GetSensorsByCompanyIdQuery(currentCompanyId.Value);
         var result = await sensorQueryService.Handle(query, cancellationToken);
         return SensorActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             sensors => Ok(sensors.Select(SensorResourceFromEntityAssembler.ToResourceFromEntity)));
@@ -79,6 +97,8 @@ public class SensorsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> UpdateSensorStatus(int sensorId, [FromBody] UpdateSensorStatusResource resource, CancellationToken cancellationToken)
     {
+        if (!await CanAccessSensor(sensorId, cancellationToken)) return Forbid();
+
         var command = new UpdateSensorStatusCommand(sensorId, resource.Status);
         var result = await sensorCommandService.Handle(command, cancellationToken);
         return SensorActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
@@ -92,6 +112,8 @@ public class SensorsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> RecordSensorReading(int sensorId, [FromBody] RecordSensorReadingResource resource, CancellationToken cancellationToken)
     {
+        if (!await CanAccessSensor(sensorId, cancellationToken)) return Forbid();
+
         var command = new RecordSensorReadingCommand(sensorId, resource.Value);
         var result = await sensorCommandService.Handle(command, cancellationToken);
         return SensorActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
@@ -105,8 +127,45 @@ public class SensorsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> UnlinkSensor(int sensorId, CancellationToken cancellationToken)
     {
+        if (!await CanAccessSensor(sensorId, cancellationToken)) return Forbid();
+
         var result = await sensorCommandService.Handle(new UnlinkSensorCommand(sensorId), cancellationToken);
         return SensorActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             sensor => Ok(SensorResourceFromEntityAssembler.ToResourceFromEntity(sensor)));
+    }
+
+    [HttpDelete("{sensorId:int}")]
+    [SwaggerOperation(Summary = "Delete sensor", Description = "Deletes an IoT sensor. Only administrators can perform this action.", OperationId = "DeleteSensor")]
+    [SwaggerResponse(StatusCodes.Status204NoContent, "The sensor was deleted.")]
+    [SwaggerResponse(StatusCodes.Status403Forbidden, "The current user cannot delete this sensor.")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The sensor was not found.")]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
+    public async Task<IActionResult> DeleteSensor(int sensorId, CancellationToken cancellationToken)
+    {
+        if (!HttpContext.IsCurrentUserAdministrator()) return Forbid();
+        if (!await CanAccessSensor(sensorId, cancellationToken)) return Forbid();
+
+        var result = await sensorCommandService.Handle(new DeleteSensorCommand(sensorId), cancellationToken);
+        return SensorActionResultAssembler.ToActionResult(this, result, problemDetailsFactory, () => NoContent());
+    }
+
+    private bool BelongsToCurrentCompany(int companyId) => HttpContext.CurrentCompanyId() == companyId;
+
+    private async Task<bool> CanAccessSensor(int sensorId, CancellationToken cancellationToken)
+    {
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return false;
+
+        var result = await sensorQueryService.Handle(new GetSensorByIdQuery(sensorId), cancellationToken);
+        return result.IsSuccess && result.Value!.CompanyId == companyId.Value;
+    }
+
+    private async Task<bool> CanAccessZone(int zoneId, CancellationToken cancellationToken)
+    {
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return false;
+
+        var result = await warehouseQueryService.Handle(new GetWarehousesByCompanyIdQuery(companyId.Value), cancellationToken);
+        return result.IsSuccess && result.Value!.Any(warehouse => warehouse.Zones.Any(zone => zone.Id == zoneId));
     }
 }

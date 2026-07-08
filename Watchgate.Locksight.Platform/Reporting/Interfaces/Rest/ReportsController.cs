@@ -6,10 +6,14 @@ using Watchgate.Locksight.Platform.Iam.Infrastructure.Pipeline.Middleware.Attrib
 using Watchgate.Locksight.Platform.Reporting.Application.CommandServices;
 using Watchgate.Locksight.Platform.Reporting.Application.QueryServices;
 using Watchgate.Locksight.Platform.Reporting.Domain.Model;
+using Watchgate.Locksight.Platform.Reporting.Domain.Model.Commands;
 using Watchgate.Locksight.Platform.Reporting.Domain.Model.Queries;
 using Watchgate.Locksight.Platform.Reporting.Interfaces.Rest.Resources;
 using Watchgate.Locksight.Platform.Reporting.Interfaces.Rest.Transform;
+using Watchgate.Locksight.Platform.Shared.Interfaces.Rest.Extensions;
 using Watchgate.Locksight.Platform.Shared.Interfaces.Rest.ProblemDetails;
+using Watchgate.Locksight.Platform.WarehouseManagement.Application.QueryServices;
+using Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.Queries;
 
 namespace Watchgate.Locksight.Platform.Reporting.Interfaces.Rest;
 
@@ -21,6 +25,7 @@ namespace Watchgate.Locksight.Platform.Reporting.Interfaces.Rest;
 public class ReportsController(
     IReportingCommandService reportingCommandService,
     IReportingQueryService reportingQueryService,
+    IWarehouseQueryService warehouseQueryService,
     ProblemDetailsFactory problemDetailsFactory) : ControllerBase
 {
     [HttpGet("event-log")]
@@ -37,7 +42,12 @@ public class ReportsController(
         [FromQuery] int? warehouseId,
         CancellationToken cancellationToken)
     {
-        var query = new GetEventLogQuery(companyId, from, to, type, zoneId, warehouseId);
+        var currentCompanyId = HttpContext.CurrentCompanyId();
+        if (currentCompanyId is null) return Unauthorized();
+        if (companyId != currentCompanyId.Value) return Forbid();
+        if (warehouseId.HasValue && !await CanAccessWarehouse(warehouseId.Value, cancellationToken)) return Forbid();
+
+        var query = new GetEventLogQuery(currentCompanyId.Value, from, to, type, zoneId, warehouseId);
         var result = await reportingQueryService.Handle(query, cancellationToken);
         return ReportingActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             events => Ok(events.Select(ReportingResourceFromEntityAssembler.ToResourceFromEventLogEntry)));
@@ -50,7 +60,11 @@ public class ReportsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetDashboard([FromQuery] int companyId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken)
     {
-        var result = await reportingQueryService.Handle(new GetReportingDashboardQuery(companyId, from, to), cancellationToken);
+        var currentCompanyId = HttpContext.CurrentCompanyId();
+        if (currentCompanyId is null) return Unauthorized();
+        if (companyId != currentCompanyId.Value) return Forbid();
+
+        var result = await reportingQueryService.Handle(new GetReportingDashboardQuery(currentCompanyId.Value, from, to), cancellationToken);
         return ReportingActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             dashboard => Ok(ReportingResourceFromEntityAssembler.ToResourceFromDashboard(dashboard)));
     }
@@ -62,7 +76,11 @@ public class ReportsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GenerateReport([FromBody] GenerateSecurityReportResource resource, CancellationToken cancellationToken)
     {
-        var command = GenerateSecurityReportCommandFromResourceAssembler.ToCommandFromResource(resource);
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return Unauthorized();
+        if (resource.WarehouseId.HasValue && !await CanAccessWarehouse(resource.WarehouseId.Value, cancellationToken)) return Forbid();
+
+        var command = new GenerateSecurityReportCommand(companyId.Value, resource.WarehouseId, resource.From, resource.To, resource.Format);
         var result = await reportingCommandService.Handle(command, cancellationToken);
         return ReportingActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             report => CreatedAtAction(nameof(GetReportById), new { reportId = report.Id }, ReportingResourceFromEntityAssembler.ToResourceFromSecurityReport(report)));
@@ -77,7 +95,11 @@ public class ReportsController(
     {
         var result = await reportingQueryService.Handle(new GetReportByIdQuery(reportId), cancellationToken);
         return ReportingActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
-            report => Ok(ReportingResourceFromEntityAssembler.ToResourceFromSecurityReport(report)));
+            report =>
+            {
+                if (!BelongsToCurrentCompany(report.CompanyId)) return Forbid();
+                return Ok(ReportingResourceFromEntityAssembler.ToResourceFromSecurityReport(report));
+            });
     }
 
     [HttpGet("company/{companyId:int}")]
@@ -86,7 +108,11 @@ public class ReportsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetReportsByCompanyId(int companyId, CancellationToken cancellationToken)
     {
-        var result = await reportingQueryService.Handle(new GetReportsByCompanyIdQuery(companyId), cancellationToken);
+        var currentCompanyId = HttpContext.CurrentCompanyId();
+        if (currentCompanyId is null) return Unauthorized();
+        if (companyId != currentCompanyId.Value) return Forbid();
+
+        var result = await reportingQueryService.Handle(new GetReportsByCompanyIdQuery(currentCompanyId.Value), cancellationToken);
         return ReportingActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             reports => Ok(reports.Select(ReportingResourceFromEntityAssembler.ToResourceFromSecurityReport)));
     }
@@ -103,6 +129,8 @@ public class ReportsController(
             return ToReportingProblem(result.Error, result.Message);
 
         var report = result.Value!;
+        if (!BelongsToCurrentCompany(report.CompanyId)) return Forbid();
+
         var eventsResult = await reportingQueryService.Handle(new GetEventLogQuery(report.CompanyId, report.From, report.To, null, null, report.WarehouseId), cancellationToken);
         if (eventsResult.IsFailure)
             return ToReportingProblem(eventsResult.Error, eventsResult.Message);
@@ -126,6 +154,8 @@ public class ReportsController(
             return ToReportingProblem(result.Error, result.Message);
 
         var report = result.Value!;
+        if (!BelongsToCurrentCompany(report.CompanyId)) return Forbid();
+
         var eventsResult = await reportingQueryService.Handle(new GetEventLogQuery(report.CompanyId, report.From, report.To, null, null, report.WarehouseId), cancellationToken);
         if (eventsResult.IsFailure)
             return ToReportingProblem(eventsResult.Error, eventsResult.Message);
@@ -145,7 +175,12 @@ public class ReportsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> ScheduleReport([FromBody] ScheduleReportResource resource, CancellationToken cancellationToken)
     {
-        var command = ScheduleReportCommandFromResourceAssembler.ToCommandFromResource(resource);
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return Unauthorized();
+        if (resource.WarehouseId.HasValue && !await CanAccessWarehouse(resource.WarehouseId.Value, cancellationToken)) return Forbid();
+
+        var command = new ScheduleReportCommand(companyId.Value, resource.WarehouseId, resource.Name,
+            resource.Frequency, resource.Format, resource.RecipientEmail, resource.StartsAt);
         var result = await reportingCommandService.Handle(command, cancellationToken);
         return ReportingActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             report => CreatedAtAction(nameof(GetScheduledReportsByCompanyId), new { companyId = report.CompanyId }, ReportingResourceFromEntityAssembler.ToResourceFromScheduledReport(report)));
@@ -157,9 +192,24 @@ public class ReportsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetScheduledReportsByCompanyId(int companyId, CancellationToken cancellationToken)
     {
-        var result = await reportingQueryService.Handle(new GetScheduledReportsByCompanyIdQuery(companyId), cancellationToken);
+        var currentCompanyId = HttpContext.CurrentCompanyId();
+        if (currentCompanyId is null) return Unauthorized();
+        if (companyId != currentCompanyId.Value) return Forbid();
+
+        var result = await reportingQueryService.Handle(new GetScheduledReportsByCompanyIdQuery(currentCompanyId.Value), cancellationToken);
         return ReportingActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             reports => Ok(reports.Select(ReportingResourceFromEntityAssembler.ToResourceFromScheduledReport)));
+    }
+
+    private bool BelongsToCurrentCompany(int companyId) => HttpContext.CurrentCompanyId() == companyId;
+
+    private async Task<bool> CanAccessWarehouse(int warehouseId, CancellationToken cancellationToken)
+    {
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return false;
+
+        var result = await warehouseQueryService.Handle(new GetWarehouseByIdQuery(warehouseId), cancellationToken);
+        return result.IsSuccess && result.Value!.CompanyId == companyId.Value;
     }
 
     private IActionResult ToReportingProblem(Enum? error, string message)

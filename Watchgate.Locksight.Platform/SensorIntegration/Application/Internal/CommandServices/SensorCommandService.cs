@@ -113,4 +113,30 @@ public class SensorCommandService(
             return Result<Sensor>.Failure(SensorIntegrationError.InternalServerError, "An unexpected error occurred.");
         }
     }
+
+    public async Task<Result> Handle(DeleteSensorCommand command, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sensor = await sensorRepository.FindByIdAsync(command.SensorId, cancellationToken);
+            if (sensor is null)
+                return Result.Failure(SensorIntegrationError.SensorNotFound, $"Sensor with id {command.SensorId} was not found.");
+
+            sensorRepository.Remove(sensor);
+            await unitOfWork.CompleteAsync(cancellationToken);
+            return Result.Success();
+        }
+        catch (OperationCanceledException)
+        {
+            return Result.Failure(SensorIntegrationError.OperationCancelled, "Operation was cancelled.");
+        }
+        catch (DbUpdateException)
+        {
+            return Result.Failure(SensorIntegrationError.DatabaseError, "A database error occurred.");
+        }
+        catch (Exception)
+        {
+            return Result.Failure(SensorIntegrationError.InternalServerError, "An unexpected error occurred.");
+        }
+    }
 }

@@ -31,4 +31,15 @@ public static class SensorActionResultAssembler
         var statusCode = ToStatusCode((SensorIntegrationError)result.Error!);
         return factory.CreateProblemDetails(controller, statusCode, result.Error, result.Message);
     }
+
+    public static IActionResult ToActionResult(
+        ControllerBase controller,
+        Result result,
+        ProblemDetailsFactory factory,
+        Func<IActionResult> successAction)
+    {
+        if (result.IsSuccess) return successAction();
+        var statusCode = ToStatusCode((SensorIntegrationError)result.Error!);
+        return factory.CreateProblemDetails(controller, statusCode, result.Error, result.Message);
+    }
 }

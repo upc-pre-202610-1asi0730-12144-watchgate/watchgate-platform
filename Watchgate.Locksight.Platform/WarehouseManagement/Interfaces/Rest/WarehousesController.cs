@@ -9,6 +9,7 @@ using Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.Commands;
 using Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.Queries;
 using Watchgate.Locksight.Platform.WarehouseManagement.Interfaces.Rest.Resources;
 using Watchgate.Locksight.Platform.WarehouseManagement.Interfaces.Rest.Transform;
+using Watchgate.Locksight.Platform.Shared.Interfaces.Rest.Extensions;
 
 namespace Watchgate.Locksight.Platform.WarehouseManagement.Interfaces.Rest;
 
@@ -31,7 +32,11 @@ public class WarehousesController(
         [FromBody] CreateWarehouseResource resource,
         CancellationToken cancellationToken)
     {
-        var command = CreateWarehouseCommandFromResourceAssembler.ToCommandFromResource(resource);
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return Unauthorized();
+
+        var command = new CreateWarehouseCommand(resource.Name, resource.Location, resource.Capacity,
+            companyId.Value, resource.OperationStart, resource.OperationEnd);
         var result = await warehouseCommandService.Handle(command, cancellationToken);
         return WarehouseActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             warehouse => CreatedAtAction(nameof(GetWarehouseById),
@@ -49,7 +54,11 @@ public class WarehousesController(
         var query = new GetWarehouseByIdQuery(warehouseId);
         var result = await warehouseQueryService.Handle(query, cancellationToken);
         return WarehouseActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
-            warehouse => Ok(WarehouseResourceFromEntityAssembler.ToResourceFromEntity(warehouse)));
+            warehouse =>
+            {
+                if (!BelongsToCurrentCompany(warehouse.CompanyId)) return Forbid();
+                return Ok(WarehouseResourceFromEntityAssembler.ToResourceFromEntity(warehouse));
+            });
     }
 
     [HttpGet("company/{companyId:int}")]
@@ -58,7 +67,11 @@ public class WarehousesController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetWarehousesByCompanyId(int companyId, CancellationToken cancellationToken)
     {
-        var query = new GetWarehousesByCompanyIdQuery(companyId);
+        var currentCompanyId = HttpContext.CurrentCompanyId();
+        if (currentCompanyId is null) return Unauthorized();
+        if (companyId != currentCompanyId.Value) return Forbid();
+
+        var query = new GetWarehousesByCompanyIdQuery(currentCompanyId.Value);
         var result = await warehouseQueryService.Handle(query, cancellationToken);
         return WarehouseActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             warehouses => Ok(warehouses.Select(WarehouseResourceFromEntityAssembler.ToResourceFromEntity)));
@@ -70,7 +83,11 @@ public class WarehousesController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetWarehouseDashboard(int companyId, CancellationToken cancellationToken)
     {
-        var result = await warehouseQueryService.Handle(new GetWarehouseDashboardByCompanyIdQuery(companyId), cancellationToken);
+        var currentCompanyId = HttpContext.CurrentCompanyId();
+        if (currentCompanyId is null) return Unauthorized();
+        if (companyId != currentCompanyId.Value) return Forbid();
+
+        var result = await warehouseQueryService.Handle(new GetWarehouseDashboardByCompanyIdQuery(currentCompanyId.Value), cancellationToken);
         return WarehouseActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             dashboard => Ok(WarehouseResourceFromEntityAssembler.ToDashboardResourceFromEntity(dashboard)));
     }
@@ -85,6 +102,8 @@ public class WarehousesController(
         [FromBody] UpdateWarehouseResource resource,
         CancellationToken cancellationToken)
     {
+        if (!await CanAccessWarehouse(warehouseId, cancellationToken)) return Forbid();
+
         var command = new UpdateWarehouseCommand(warehouseId, resource.Name, resource.Location,
             resource.Capacity, resource.OperationStart, resource.OperationEnd);
         var result = await warehouseCommandService.Handle(command, cancellationToken);
@@ -99,6 +118,8 @@ public class WarehousesController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> DeactivateWarehouse(int warehouseId, CancellationToken cancellationToken)
     {
+        if (!await CanAccessWarehouse(warehouseId, cancellationToken)) return Forbid();
+
         var result = await warehouseCommandService.Handle(new DeactivateWarehouseCommand(warehouseId), cancellationToken);
         return WarehouseActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             warehouse => Ok(WarehouseResourceFromEntityAssembler.ToResourceFromEntity(warehouse)));
@@ -111,6 +132,9 @@ public class WarehousesController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> DeleteWarehouse(int warehouseId, CancellationToken cancellationToken)
     {
+        if (!HttpContext.IsCurrentUserAdministrator()) return Forbid();
+        if (!await CanAccessWarehouse(warehouseId, cancellationToken)) return Forbid();
+
         var result = await warehouseCommandService.Handle(new DeleteWarehouseCommand(warehouseId), cancellationToken);
         return WarehouseActionResultAssembler.ToActionResult(this, result, problemDetailsFactory, _ => NoContent());
     }
@@ -125,6 +149,8 @@ public class WarehousesController(
         [FromBody] CreateWarehouseZoneResource resource,
         CancellationToken cancellationToken)
     {
+        if (!await CanAccessWarehouse(warehouseId, cancellationToken)) return Forbid();
+
         var command = new CreateWarehouseZoneCommand(resource.Name, resource.Area, warehouseId, resource.RiskLevel);
         var result = await warehouseCommandService.Handle(command, cancellationToken);
         return WarehouseActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
@@ -142,9 +168,22 @@ public class WarehousesController(
         [FromBody] UpdateZoneRiskLevelResource resource,
         CancellationToken cancellationToken)
     {
+        if (!await CanAccessWarehouse(warehouseId, cancellationToken)) return Forbid();
+
         var command = new UpdateZoneRiskLevelCommand(warehouseId, zoneId, resource.RiskLevel);
         var result = await warehouseCommandService.Handle(command, cancellationToken);
         return WarehouseActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             zone => Ok(WarehouseResourceFromEntityAssembler.ToZoneResourceFromEntity(zone)));
+    }
+
+    private bool BelongsToCurrentCompany(int companyId) => HttpContext.CurrentCompanyId() == companyId;
+
+    private async Task<bool> CanAccessWarehouse(int warehouseId, CancellationToken cancellationToken)
+    {
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return false;
+
+        var result = await warehouseQueryService.Handle(new GetWarehouseByIdQuery(warehouseId), cancellationToken);
+        return result.IsSuccess && result.Value!.CompanyId == companyId.Value;
     }
 }

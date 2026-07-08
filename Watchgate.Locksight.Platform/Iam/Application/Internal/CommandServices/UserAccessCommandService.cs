@@ -75,6 +75,8 @@ public class UserAccessCommandService(
         var user = await userRepository.FindByIdAsync(command.UserId, cancellationToken);
         if (user is null)
             return Result<UserAccessProfile>.Failure(IamError.UserNotFound, $"User with id {command.UserId} was not found.");
+        if (user.CompanyId != command.CompanyId)
+            return Result<UserAccessProfile>.Failure(IamError.UserNotFound, $"User with id {command.UserId} was not found in this company.");
 
         var profile = await accessProfileRepository.FindByUserIdAsync(command.UserId, cancellationToken);
         if (profile is null)

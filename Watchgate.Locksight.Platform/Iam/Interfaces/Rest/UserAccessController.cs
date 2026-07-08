@@ -10,6 +10,7 @@ using Watchgate.Locksight.Platform.Iam.Infrastructure.Pipeline.Middleware.Attrib
 using Watchgate.Locksight.Platform.Iam.Interfaces.Rest.Resources;
 using Watchgate.Locksight.Platform.Iam.Interfaces.Rest.Transform;
 using Watchgate.Locksight.Platform.Shared.Application.Model;
+using Watchgate.Locksight.Platform.Shared.Interfaces.Rest.Extensions;
 using Watchgate.Locksight.Platform.Shared.Interfaces.Rest.ProblemDetails;
 
 namespace Watchgate.Locksight.Platform.Iam.Interfaces.Rest;
@@ -29,8 +30,13 @@ public class UserAccessController(
     [SwaggerResponse(StatusCodes.Status201Created, "The invitation was created.", typeof(UserInvitationResource))]
     public async Task<IActionResult> InviteUser([FromBody] InviteUserResource resource, CancellationToken cancellationToken)
     {
+        if (!HttpContext.IsCurrentUserAdministrator()) return Forbid();
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return Unauthorized();
+
         var result = await userAccessCommandService.Handle(
-            new InviteUserCommand(resource.CompanyId, resource.Email, resource.Role, resource.Permissions, resource.ZoneId),
+            new InviteUserCommand(companyId.Value, resource.Email, resource.Role,
+                NormalizePermissions(resource.Role, resource.Permissions), resource.ZoneId),
             cancellationToken);
         return ToActionResult(result, invitation => CreatedAtAction(nameof(GetInvitationsByCompanyId),
             new { companyId = invitation.CompanyId },
@@ -42,9 +48,13 @@ public class UserAccessController(
     [SwaggerResponse(StatusCodes.Status201Created, "The team user access profile was created.", typeof(UserAccessProfileResource))]
     public async Task<IActionResult> CreateTeamUser([FromBody] CreateTeamUserResource resource, CancellationToken cancellationToken)
     {
+        if (!HttpContext.IsCurrentUserAdministrator()) return Forbid();
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return Unauthorized();
+
         var result = await userAccessCommandService.Handle(
-            new CreateTeamUserCommand(resource.CompanyId, resource.FullName, resource.Email, resource.Password,
-                resource.Role, resource.Permissions, resource.ZoneId),
+            new CreateTeamUserCommand(companyId.Value, resource.FullName, resource.Email, resource.Password,
+                resource.Role, NormalizePermissions(resource.Role, resource.Permissions), resource.ZoneId),
             cancellationToken);
         return ToActionResult(result, profile => CreatedAtAction(nameof(GetUserAccessProfile),
             new { userId = profile.UserId },
@@ -66,7 +76,11 @@ public class UserAccessController(
     [SwaggerResponse(StatusCodes.Status200OK, "The invitations were retrieved.", typeof(IEnumerable<UserInvitationResource>))]
     public async Task<IActionResult> GetInvitationsByCompanyId(int companyId, CancellationToken cancellationToken)
     {
-        var result = await userAccessQueryService.Handle(new GetInvitationsByCompanyIdQuery(companyId), cancellationToken);
+        var currentCompanyId = HttpContext.CurrentCompanyId();
+        if (currentCompanyId is null) return Unauthorized();
+        if (companyId != currentCompanyId.Value) return Forbid();
+
+        var result = await userAccessQueryService.Handle(new GetInvitationsByCompanyIdQuery(currentCompanyId.Value), cancellationToken);
         return ToActionResult(result, invitations => Ok(invitations.Select(UserAccessResourceFromEntityAssembler.ToResourceFromInvitation)));
     }
 
@@ -75,8 +89,13 @@ public class UserAccessController(
     [SwaggerResponse(StatusCodes.Status200OK, "The access profile was updated.", typeof(UserAccessProfileResource))]
     public async Task<IActionResult> AssignRoleAndPermissions(int userId, [FromBody] AssignUserAccessResource resource, CancellationToken cancellationToken)
     {
+        if (!HttpContext.IsCurrentUserAdministrator()) return Forbid();
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return Unauthorized();
+
         var result = await userAccessCommandService.Handle(
-            new AssignUserAccessCommand(userId, resource.CompanyId, resource.Role, resource.Permissions),
+            new AssignUserAccessCommand(userId, companyId.Value, resource.Role,
+                NormalizePermissions(resource.Role, resource.Permissions)),
             cancellationToken);
         return ToActionResult(result, profile => Ok(UserAccessResourceFromEntityAssembler.ToResourceFromProfile(profile)));
     }
@@ -86,6 +105,9 @@ public class UserAccessController(
     [SwaggerResponse(StatusCodes.Status200OK, "The user zone restriction was updated.", typeof(UserAccessProfileResource))]
     public async Task<IActionResult> RestrictZoneAccess(int userId, [FromBody] RestrictUserZoneAccessResource resource, CancellationToken cancellationToken)
     {
+        if (!HttpContext.IsCurrentUserAdministrator()) return Forbid();
+        if (!await CanAccessUserProfile(userId, cancellationToken)) return Forbid();
+
         var result = await userAccessCommandService.Handle(new RestrictUserZoneAccessCommand(userId, resource.ZoneId), cancellationToken);
         return ToActionResult(result, profile => Ok(UserAccessResourceFromEntityAssembler.ToResourceFromProfile(profile)));
     }
@@ -95,6 +117,9 @@ public class UserAccessController(
     [SwaggerResponse(StatusCodes.Status200OK, "The user access was revoked.", typeof(UserAccessProfileResource))]
     public async Task<IActionResult> RevokeAccess(int userId, CancellationToken cancellationToken)
     {
+        if (!HttpContext.IsCurrentUserAdministrator()) return Forbid();
+        if (!await CanAccessUserProfile(userId, cancellationToken)) return Forbid();
+
         var result = await userAccessCommandService.Handle(new RevokeUserAccessCommand(userId), cancellationToken);
         return ToActionResult(result, profile => Ok(UserAccessResourceFromEntityAssembler.ToResourceFromProfile(profile)));
     }
@@ -104,6 +129,10 @@ public class UserAccessController(
     [SwaggerResponse(StatusCodes.Status200OK, "The notification preferences were updated.", typeof(UserAccessProfileResource))]
     public async Task<IActionResult> UpdateNotificationPreferences(int userId, [FromBody] UpdateNotificationPreferencesResource resource, CancellationToken cancellationToken)
     {
+        var currentUserId = HttpContext.CurrentUserId();
+        if (!HttpContext.IsCurrentUserAdministrator() && currentUserId != userId) return Forbid();
+        if (!await CanAccessUserProfile(userId, cancellationToken)) return Forbid();
+
         var result = await userAccessCommandService.Handle(
             new UpdateNotificationPreferencesCommand(userId, resource.EmailEnabled, resource.PushEnabled, resource.CriticalOnly),
             cancellationToken);
@@ -115,8 +144,15 @@ public class UserAccessController(
     [SwaggerResponse(StatusCodes.Status200OK, "The access profile was retrieved.", typeof(UserAccessProfileResource))]
     public async Task<IActionResult> GetUserAccessProfile(int userId, CancellationToken cancellationToken)
     {
+        var currentUserId = HttpContext.CurrentUserId();
+        if (!HttpContext.IsCurrentUserAdministrator() && currentUserId != userId) return Forbid();
+
         var result = await userAccessQueryService.Handle(new GetUserAccessProfileByUserIdQuery(userId), cancellationToken);
-        return ToActionResult(result, profile => Ok(UserAccessResourceFromEntityAssembler.ToResourceFromProfile(profile)));
+        return ToActionResult(result, profile =>
+        {
+            if (profile.CompanyId != HttpContext.CurrentCompanyId()) return Forbid();
+            return Ok(UserAccessResourceFromEntityAssembler.ToResourceFromProfile(profile));
+        });
     }
 
     [HttpGet("company/{companyId:int}")]
@@ -124,9 +160,27 @@ public class UserAccessController(
     [SwaggerResponse(StatusCodes.Status200OK, "The access profiles were retrieved.", typeof(IEnumerable<UserAccessProfileResource>))]
     public async Task<IActionResult> GetUserAccessProfilesByCompanyId(int companyId, CancellationToken cancellationToken)
     {
-        var result = await userAccessQueryService.Handle(new GetUserAccessProfilesByCompanyIdQuery(companyId), cancellationToken);
+        var currentCompanyId = HttpContext.CurrentCompanyId();
+        if (currentCompanyId is null) return Unauthorized();
+        if (companyId != currentCompanyId.Value) return Forbid();
+
+        var result = await userAccessQueryService.Handle(new GetUserAccessProfilesByCompanyIdQuery(currentCompanyId.Value), cancellationToken);
         return ToActionResult(result, profiles => Ok(profiles.Select(UserAccessResourceFromEntityAssembler.ToResourceFromProfile)));
     }
+
+    private async Task<bool> CanAccessUserProfile(int userId, CancellationToken cancellationToken)
+    {
+        var currentCompanyId = HttpContext.CurrentCompanyId();
+        if (currentCompanyId is null) return false;
+
+        var result = await userAccessQueryService.Handle(new GetUserAccessProfileByUserIdQuery(userId), cancellationToken);
+        return result.IsSuccess && result.Value!.CompanyId == currentCompanyId.Value;
+    }
+
+    private static string NormalizePermissions(string role, string permissions) =>
+        string.Equals(role, "Administrator", StringComparison.OrdinalIgnoreCase)
+            ? "WAREHOUSES_MANAGE,SENSORS_MANAGE,ALERTS_MANAGE,REPORTS_VIEW,BILLING_MANAGE,TEAM_MANAGE"
+            : permissions;
 
     private IActionResult ToActionResult<T>(Result<T> result, Func<T, IActionResult> successAction)
     {

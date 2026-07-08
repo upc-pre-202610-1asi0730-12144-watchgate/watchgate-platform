@@ -91,6 +91,17 @@ public class WarehouseCommandService(
         if (warehouse is null)
             return Result<WarehouseZone>.Failure(WarehouseManagementError.WarehouseNotFound,
                 _localizer[nameof(WarehouseManagementError.WarehouseNotFound)]);
+
+        if (command.Area <= 0)
+            return Result<WarehouseZone>.Failure(WarehouseManagementError.ZoneAreaExceedsWarehouseCapacity,
+                "Zone area must be greater than zero.");
+
+        var currentZones = await zoneRepository.FindByWarehouseIdAsync(command.WarehouseId, cancellationToken);
+        var occupiedArea = currentZones.Sum(zone => zone.Area);
+        if (command.Area > warehouse.Capacity || occupiedArea + command.Area > warehouse.Capacity)
+            return Result<WarehouseZone>.Failure(WarehouseManagementError.ZoneAreaExceedsWarehouseCapacity,
+                $"Zone area exceeds available warehouse capacity. Capacity: {warehouse.Capacity}, occupied: {occupiedArea}, requested: {command.Area}.");
+
         var zone = new WarehouseZone(command.Name, command.Area, command.WarehouseId, command.RiskLevel);
         await zoneRepository.AddAsync(zone, cancellationToken);
         await unitOfWork.CompleteAsync(cancellationToken);

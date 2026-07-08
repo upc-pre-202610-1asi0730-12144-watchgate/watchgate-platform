@@ -10,4 +10,5 @@ public interface ISensorCommandService
     Task<Result<Sensor>> Handle(UpdateSensorStatusCommand command, CancellationToken cancellationToken = default);
     Task<Result<Sensor>> Handle(RecordSensorReadingCommand command, CancellationToken cancellationToken = default);
     Task<Result<Sensor>> Handle(UnlinkSensorCommand command, CancellationToken cancellationToken = default);
+    Task<Result> Handle(DeleteSensorCommand command, CancellationToken cancellationToken = default);
 }

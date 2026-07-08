@@ -9,6 +9,11 @@ using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model.Commands;
 using Watchgate.Locksight.Platform.SecurityAlerts.Domain.Model.Queries;
 using Watchgate.Locksight.Platform.SecurityAlerts.Interfaces.Rest.Resources;
 using Watchgate.Locksight.Platform.SecurityAlerts.Interfaces.Rest.Transform;
+using Watchgate.Locksight.Platform.SensorIntegration.Application.QueryServices;
+using Watchgate.Locksight.Platform.SensorIntegration.Domain.Model.Queries;
+using Watchgate.Locksight.Platform.Shared.Interfaces.Rest.Extensions;
+using Watchgate.Locksight.Platform.WarehouseManagement.Application.QueryServices;
+using Watchgate.Locksight.Platform.WarehouseManagement.Domain.Model.Queries;
 
 namespace Watchgate.Locksight.Platform.SecurityAlerts.Interfaces.Rest;
 
@@ -20,6 +25,8 @@ namespace Watchgate.Locksight.Platform.SecurityAlerts.Interfaces.Rest;
 public class SecurityAlertsController(
     ISecurityAlertCommandService alertCommandService,
     ISecurityAlertQueryService alertQueryService,
+    ISensorQueryService sensorQueryService,
+    IWarehouseQueryService warehouseQueryService,
     ProblemDetailsFactory problemDetailsFactory) : ControllerBase
 {
     [HttpPost]
@@ -29,7 +36,11 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> CreateSecurityAlert([FromBody] CreateSecurityAlertResource resource, CancellationToken cancellationToken)
     {
-        var command = new CreateSecurityAlertCommand(resource.Type, resource.Severity, resource.Description, resource.SensorId, resource.CompanyId);
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return Unauthorized();
+        if (!await CanAccessSensor(resource.SensorId, cancellationToken)) return Forbid();
+
+        var command = new CreateSecurityAlertCommand(resource.Type, resource.Severity, resource.Description, resource.SensorId, companyId.Value);
         var result = await alertCommandService.Handle(command, cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             alert => CreatedAtAction(nameof(GetAlertById), new { alertId = alert.Id }, SecurityAlertResourceFromEntityAssembler.ToResourceFromEntity(alert)));
@@ -45,7 +56,11 @@ public class SecurityAlertsController(
         var query = new GetAlertByIdQuery(alertId);
         var result = await alertQueryService.Handle(query, cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
-            alert => Ok(SecurityAlertResourceFromEntityAssembler.ToResourceFromEntity(alert)));
+            alert =>
+            {
+                if (!BelongsToCurrentCompany(alert.CompanyId)) return Forbid();
+                return Ok(SecurityAlertResourceFromEntityAssembler.ToResourceFromEntity(alert));
+            });
     }
 
     [HttpGet("company/{companyId:int}")]
@@ -54,7 +69,11 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetAlertsByCompanyId(int companyId, CancellationToken cancellationToken)
     {
-        var query = new GetAlertsByCompanyIdQuery(companyId);
+        var currentCompanyId = HttpContext.CurrentCompanyId();
+        if (currentCompanyId is null) return Unauthorized();
+        if (companyId != currentCompanyId.Value) return Forbid();
+
+        var query = new GetAlertsByCompanyIdQuery(currentCompanyId.Value);
         var result = await alertQueryService.Handle(query, cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             alerts => Ok(alerts.Select(SecurityAlertResourceFromEntityAssembler.ToResourceFromEntity)));
@@ -66,6 +85,8 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetAlertsByWarehouseId(int warehouseId, CancellationToken cancellationToken)
     {
+        if (!await CanAccessWarehouse(warehouseId, cancellationToken)) return Forbid();
+
         var query = new GetAlertsByWarehouseIdQuery(warehouseId);
         var result = await alertQueryService.Handle(query, cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
@@ -79,6 +100,8 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> ResolveAlert(int alertId, CancellationToken cancellationToken)
     {
+        if (!await CanAccessAlert(alertId, cancellationToken)) return Forbid();
+
         var command = new ResolveAlertCommand(alertId);
         var result = await alertCommandService.Handle(command, cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
@@ -92,6 +115,8 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> AcknowledgeAlert(int alertId, CancellationToken cancellationToken)
     {
+        if (!await CanAccessAlert(alertId, cancellationToken)) return Forbid();
+
         var result = await alertCommandService.Handle(new AcknowledgeAlertCommand(alertId), cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             alert => Ok(SecurityAlertResourceFromEntityAssembler.ToResourceFromEntity(alert)));
@@ -104,6 +129,8 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> MarkAlertAsAttended(int alertId, CancellationToken cancellationToken)
     {
+        if (!await CanAccessAlert(alertId, cancellationToken)) return Forbid();
+
         var result = await alertCommandService.Handle(new MarkAlertAsAttendedCommand(alertId), cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             alert => Ok(SecurityAlertResourceFromEntityAssembler.ToResourceFromEntity(alert)));
@@ -116,6 +143,8 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> EscalateAlert(int alertId, CancellationToken cancellationToken)
     {
+        if (!await CanAccessAlert(alertId, cancellationToken)) return Forbid();
+
         var result = await alertCommandService.Handle(new EscalateAlertCommand(alertId), cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             alert => Ok(SecurityAlertResourceFromEntityAssembler.ToResourceFromEntity(alert)));
@@ -128,6 +157,8 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> FlagAlertAsFalseAlarm(int alertId, CancellationToken cancellationToken)
     {
+        if (!await CanAccessAlert(alertId, cancellationToken)) return Forbid();
+
         var result = await alertCommandService.Handle(new FlagAlertAsFalseAlarmCommand(alertId), cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             alert => Ok(SecurityAlertResourceFromEntityAssembler.ToResourceFromEntity(alert)));
@@ -140,6 +171,8 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> ClassifyAlertPriority(int alertId, [FromBody] ClassifyAlertPriorityResource resource, CancellationToken cancellationToken)
     {
+        if (!await CanAccessAlert(alertId, cancellationToken)) return Forbid();
+
         var result = await alertCommandService.Handle(new ClassifyAlertPriorityCommand(alertId, resource.Severity), cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             alert => Ok(SecurityAlertResourceFromEntityAssembler.ToResourceFromEntity(alert)));
@@ -152,7 +185,11 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> CreateIncident([FromBody] CreateAlertIncidentResource resource, CancellationToken cancellationToken)
     {
-        var command = new CreateAlertIncidentCommand(resource.Title, resource.Description, resource.Priority, resource.CompanyId, resource.RelatedAlertId);
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return Unauthorized();
+        if (resource.RelatedAlertId is not null && !await CanAccessAlert(resource.RelatedAlertId.Value, cancellationToken)) return Forbid();
+
+        var command = new CreateAlertIncidentCommand(resource.Title, resource.Description, resource.Priority, companyId.Value, resource.RelatedAlertId);
         var result = await alertCommandService.Handle(command, cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             incident => CreatedAtAction(nameof(GetIncidentById), new { incidentId = incident.Id }, SecurityAlertResourceFromEntityAssembler.ToIncidentResourceFromEntity(incident)));
@@ -168,7 +205,11 @@ public class SecurityAlertsController(
         var query = new GetIncidentByIdQuery(incidentId);
         var result = await alertQueryService.Handle(query, cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
-            incident => Ok(SecurityAlertResourceFromEntityAssembler.ToIncidentResourceFromEntity(incident)));
+            incident =>
+            {
+                if (!BelongsToCurrentCompany(incident.CompanyId)) return Forbid();
+                return Ok(SecurityAlertResourceFromEntityAssembler.ToIncidentResourceFromEntity(incident));
+            });
     }
 
     [HttpGet("incidents/company/{companyId:int}")]
@@ -177,7 +218,11 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetIncidentsByCompanyId(int companyId, CancellationToken cancellationToken)
     {
-        var query = new GetIncidentsByCompanyIdQuery(companyId);
+        var currentCompanyId = HttpContext.CurrentCompanyId();
+        if (currentCompanyId is null) return Unauthorized();
+        if (companyId != currentCompanyId.Value) return Forbid();
+
+        var query = new GetIncidentsByCompanyIdQuery(currentCompanyId.Value);
         var result = await alertQueryService.Handle(query, cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             incidents => Ok(incidents.Select(SecurityAlertResourceFromEntityAssembler.ToIncidentResourceFromEntity)));
@@ -189,6 +234,8 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> GetIncidentsByWarehouseId(int warehouseId, CancellationToken cancellationToken)
     {
+        if (!await CanAccessWarehouse(warehouseId, cancellationToken)) return Forbid();
+
         var query = new GetIncidentsByWarehouseIdQuery(warehouseId);
         var result = await alertQueryService.Handle(query, cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
@@ -202,9 +249,49 @@ public class SecurityAlertsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "JWT token is missing or invalid.")]
     public async Task<IActionResult> CloseIncident(int incidentId, CancellationToken cancellationToken)
     {
+        if (!await CanAccessIncident(incidentId, cancellationToken)) return Forbid();
+
         var command = new CloseIncidentCommand(incidentId);
         var result = await alertCommandService.Handle(command, cancellationToken);
         return SecurityAlertActionResultAssembler.ToActionResult(this, result, problemDetailsFactory,
             incident => Ok(SecurityAlertResourceFromEntityAssembler.ToIncidentResourceFromEntity(incident)));
+    }
+
+    private bool BelongsToCurrentCompany(int companyId) => HttpContext.CurrentCompanyId() == companyId;
+
+    private async Task<bool> CanAccessAlert(int alertId, CancellationToken cancellationToken)
+    {
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return false;
+
+        var result = await alertQueryService.Handle(new GetAlertByIdQuery(alertId), cancellationToken);
+        return result.IsSuccess && result.Value!.CompanyId == companyId.Value;
+    }
+
+    private async Task<bool> CanAccessIncident(int incidentId, CancellationToken cancellationToken)
+    {
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return false;
+
+        var result = await alertQueryService.Handle(new GetIncidentByIdQuery(incidentId), cancellationToken);
+        return result.IsSuccess && result.Value!.CompanyId == companyId.Value;
+    }
+
+    private async Task<bool> CanAccessSensor(int sensorId, CancellationToken cancellationToken)
+    {
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return false;
+
+        var result = await sensorQueryService.Handle(new GetSensorByIdQuery(sensorId), cancellationToken);
+        return result.IsSuccess && result.Value!.CompanyId == companyId.Value;
+    }
+
+    private async Task<bool> CanAccessWarehouse(int warehouseId, CancellationToken cancellationToken)
+    {
+        var companyId = HttpContext.CurrentCompanyId();
+        if (companyId is null) return false;
+
+        var result = await warehouseQueryService.Handle(new GetWarehouseByIdQuery(warehouseId), cancellationToken);
+        return result.IsSuccess && result.Value!.CompanyId == companyId.Value;
     }
 }

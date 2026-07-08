@@ -6,5 +6,5 @@ namespace Watchgate.Locksight.Platform.Reporting.Interfaces.Rest.Transform;
 public static class GenerateSecurityReportCommandFromResourceAssembler
 {
     public static GenerateSecurityReportCommand ToCommandFromResource(GenerateSecurityReportResource resource) =>
-        new(resource.CompanyId, resource.WarehouseId, resource.From, resource.To, resource.Format);
+        new(0, resource.WarehouseId, resource.From, resource.To, resource.Format);
 }

@@ -1,9 +1,9 @@
 namespace Watchgate.Locksight.Platform.Iam.Interfaces.Rest.Resources;
 
-public record InviteUserResource(int CompanyId, string Email, string Role, string Permissions, int? ZoneId);
-public record CreateTeamUserResource(int CompanyId, string FullName, string Email, string Password, string Role, string Permissions, int? ZoneId);
+public record InviteUserResource(string Email, string Role, string Permissions, int? ZoneId);
+public record CreateTeamUserResource(string FullName, string Email, string Password, string Role, string Permissions, int? ZoneId);
 public record AcceptInvitationResource(string Token);
-public record AssignUserAccessResource(int CompanyId, string Role, string Permissions);
+public record AssignUserAccessResource(string Role, string Permissions);
 public record RestrictUserZoneAccessResource(int ZoneId);
 public record UpdateNotificationPreferencesResource(bool EmailEnabled, bool PushEnabled, bool CriticalOnly);
 

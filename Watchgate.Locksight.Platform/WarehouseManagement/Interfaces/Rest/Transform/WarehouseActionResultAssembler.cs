@@ -13,6 +13,7 @@ public static class WarehouseActionResultAssembler
     {
         WarehouseManagementError.WarehouseNotFound => StatusCodes.Status404NotFound,
         WarehouseManagementError.ZoneNotFound => StatusCodes.Status404NotFound,
+        WarehouseManagementError.ZoneAreaExceedsWarehouseCapacity => StatusCodes.Status400BadRequest,
         WarehouseManagementError.CompanyNotFound => StatusCodes.Status404NotFound,
         WarehouseManagementError.OperationCancelled => StatusCodes.Status409Conflict,
         WarehouseManagementError.DatabaseError => StatusCodes.Status500InternalServerError,

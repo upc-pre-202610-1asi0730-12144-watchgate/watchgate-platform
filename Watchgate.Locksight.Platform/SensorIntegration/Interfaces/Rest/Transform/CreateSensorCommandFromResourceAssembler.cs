@@ -6,5 +6,5 @@ namespace Watchgate.Locksight.Platform.SensorIntegration.Interfaces.Rest.Transfo
 public static class CreateSensorCommandFromResourceAssembler
 {
     public static CreateSensorCommand ToCommandFromResource(CreateSensorResource resource) =>
-        new(resource.Name, resource.Type, resource.Unit, resource.ZoneId, resource.CompanyId);
+        new(resource.Name, resource.Type, resource.Unit, resource.ZoneId, 0);
 }
