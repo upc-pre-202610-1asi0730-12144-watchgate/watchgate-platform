@@ -15,6 +15,7 @@ namespace Watchgate.Locksight.Platform.Iam.Application.Internal.CommandServices;
 public class UserCommandService(
     IUserRepository userRepository,
     ICompanyRepository companyRepository,
+    IUserAccessProfileRepository userAccessProfileRepository,
     IHashingService hashingService,
     ITokenService tokenService,
     IUnitOfWork unitOfWork,
@@ -51,6 +52,14 @@ public class UserCommandService(
             var hashedPassword = hashingService.HashPassword(command.Password);
             var user = new User(command.FullName, command.Email, hashedPassword, company.Id, "Administrator");
             await userRepository.AddAsync(user, cancellationToken);
+            await unitOfWork.CompleteAsync(cancellationToken);
+
+            var accessProfile = new UserAccessProfile(
+                user.Id,
+                company.Id,
+                "Administrator",
+                "WAREHOUSES_MANAGE,SENSORS_MANAGE,ALERTS_MANAGE,REPORTS_VIEW,BILLING_MANAGE,TEAM_MANAGE");
+            await userAccessProfileRepository.AddAsync(accessProfile, cancellationToken);
             await unitOfWork.CompleteAsync(cancellationToken);
 
             var token = tokenService.GenerateToken(user);
